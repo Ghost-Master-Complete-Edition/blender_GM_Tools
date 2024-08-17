@@ -3,7 +3,7 @@ bl_info = {
     "blender": (4, 2, 0),  # Updated to Blender 4.2
     "category": "Object",
     "author": "Patatifique",
-    "description": "Plugin for Blender 4.2, various function to help working with ghost master.",
+    "description": "Plugin for Blender 4.2, various functions to help working with ghost master.",
 }
 
 import bpy
@@ -67,6 +67,9 @@ class BSP_EDITOR_HELPER_PT_Panel(bpy.types.Panel):
     # Define properties
     bpy.types.Scene.use_render_flags = bpy.props.BoolProperty(name="Render Flags", default=False)
     bpy.types.Scene.use_armature_flags = bpy.props.BoolProperty(name="Armature", default=False)
+    bpy.types.Scene.use_map_editing = bpy.props.BoolProperty(name="Map Editing", default=False)
+    bpy.types.Scene.show_ice_layer = bpy.props.BoolProperty(name="Show Ice Layer", default=True)
+    bpy.types.Scene.show_invisible_flag = bpy.props.BoolProperty(name="Show Invisible Flag", default=False)
 
     def draw(self, context):
         layout = self.layout
@@ -86,6 +89,32 @@ class BSP_EDITOR_HELPER_PT_Panel(bpy.types.Panel):
         if scene.use_armature_flags:
             col = layout.column(align=True)
             col.operator("armature.set_headbone", text="Set Headbone")
+
+        # Map Editing Panel
+        row = layout.row()
+        row.prop(scene, "use_map_editing", text="Map Editing", icon="TRIA_DOWN" if scene.use_map_editing else "TRIA_RIGHT", emboss=False)
+        if scene.use_map_editing:
+            col = layout.column(align=True)
+            col.prop(scene, "show_ice_layer", text="Show Ice Layer")
+            col.prop(scene, "show_invisible_flag", text="Show Invisible Flag")
+
+def update_ice_layer_visibility(self, context):
+    # Update the visibility of objects with 'mat_2pssnow2' material.
+    for obj in bpy.data.objects:
+        if obj.type == 'MESH':
+            for mat_slot in obj.material_slots:
+                if mat_slot.material and mat_slot.material.name == "mat_2pssnow2":
+                    obj.hide_set(not context.scene.show_ice_layer)
+
+def update_invisible_flag_visibility(self, context):
+    # Update the visibility of objects with the 'FLAGS0' custom property set to 'INVISIBLE'.
+    for obj in bpy.data.objects:
+        if  obj.get("FLAGS0") == "INVISIBLE":
+            obj.hide_set(not context.scene.show_invisible_flag)
+
+# Assign the update functions to the properties
+bpy.types.Scene.show_ice_layer = bpy.props.BoolProperty(name="Show Ice Layer", default=True, update=update_ice_layer_visibility)
+bpy.types.Scene.show_invisible_flag = bpy.props.BoolProperty(name="Show Invisible Flag", default=False, update=update_invisible_flag_visibility)
 
 def register():
     bpy.utils.register_class(OBJECT_OT_AddLightableProperty)
