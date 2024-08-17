@@ -126,8 +126,8 @@ class BSP_EDITOR_HELPER_PT_Panel(bpy.types.Panel):
         row.prop(scene, "use_map_editing", text="Map Editing", icon="TRIA_DOWN" if scene.use_map_editing else "TRIA_RIGHT", emboss=False)
         if scene.use_map_editing:
             col = layout.column(align=True)
-            col.prop(scene, "show_ice_layer", text="Show Ice Layer")
-            col.prop(scene, "show_invisible_flag", text="Show Invisible Flag")
+            col.prop(scene, "show_ice_layer", text="Show Ice Layer", toggle=True)
+            col.prop(scene, "show_invisible_flag", text="Show Invisible Flag", toggle=True)
 
         # Current Floor View Panel
         row = layout.row()
