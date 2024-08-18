@@ -8,6 +8,13 @@ bl_info = {
 
 import bpy
 
+def get_next_render_flag_index(obj):
+    """Finds the next available index for the RENDER_FLAGS property."""
+    index = 0
+    while f"RENDER_FLAGS{index}" in obj:
+        index += 1
+    return index
+
 def update_ice_layer_visibility(self, context):
     """Update the visibility of objects with 'mat_2pssnow2' material."""
     for obj in bpy.data.objects:
@@ -47,7 +54,7 @@ class OBJECT_OT_AddLightableProperty(bpy.types.Operator):
         selected_objects = context.selected_objects
         for obj in selected_objects:
             index = get_next_render_flag_index(obj)
-            obj[f"RENDERFLAGS{index}"] = "RUNTIME_LIGHTABLE"
+            obj[f"RENDER_FLAGS{index}"] = "RUNTIME_LIGHTABLE"
         return {'FINISHED'}
 
 class OBJECT_OT_AddDoubleSidedProperty(bpy.types.Operator):
@@ -60,7 +67,7 @@ class OBJECT_OT_AddDoubleSidedProperty(bpy.types.Operator):
         selected_objects = context.selected_objects
         for obj in selected_objects:
             index = get_next_render_flag_index(obj)
-            obj[f"RENDERFLAGS{index}"] = "DOUBLE_SIDED"
+            obj[f"RENDER_FLAGS{index}"] = "DOUBLE_SIDED"
         return {'FINISHED'}
 
 class ARMATURE_OT_SetHeadbone(bpy.types.Operator):
