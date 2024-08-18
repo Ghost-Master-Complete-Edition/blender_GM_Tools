@@ -78,6 +78,62 @@ class ARMATURE_OT_SetHeadbone(bpy.types.Operator):
             self.report({'WARNING'}, "No active bone selected in Pose or Edit mode")
         return {'FINISHED'}
 
+class ARMATURE_OT_SetChainpoint(bpy.types.Operator):
+    """Set selected bone's NullBoxes property to CHAINPOINT"""
+    bl_idname = "armature.set_chainpoint"
+    bl_label = "Set Chainpoint"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        obj = context.object
+        if obj and obj.type == 'ARMATURE' and context.active_bone:
+            bone_name = context.active_bone.name
+
+            # Apply to Pose mode bone
+            if bone_name in obj.pose.bones:
+                pose_bone = obj.pose.bones[bone_name]
+                pose_bone["NullBoxes"] = "CHAINPOINT"
+
+            # Temporarily switch to Edit mode to modify the Edit mode bone
+            bpy.ops.object.mode_set(mode='EDIT')
+            if bone_name in obj.data.edit_bones:
+                edit_bone = obj.data.edit_bones[bone_name]
+                edit_bone["NullBoxes"] = "CHAINPOINT"
+            # Switch back to Pose mode
+            bpy.ops.object.mode_set(mode='POSE')
+
+        else:
+            self.report({'WARNING'}, "No active bone selected in Pose or Edit mode")
+        return {'FINISHED'}
+
+class ARMATURE_OT_SetSpellPoint(bpy.types.Operator):
+    """Set selected bone's NullBoxes property to SPELLPOINT"""
+    bl_idname = "armature.set_spellpoint"
+    bl_label = "Set SpellPoint"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        obj = context.object
+        if obj and obj.type == 'ARMATURE' and context.active_bone:
+            bone_name = context.active_bone.name
+
+            # Apply to Pose mode bone
+            if bone_name in obj.pose.bones:
+                pose_bone = obj.pose.bones[bone_name]
+                pose_bone["NullBoxes"] = "SPELLPOINT"
+
+            # Temporarily switch to Edit mode to modify the Edit mode bone
+            bpy.ops.object.mode_set(mode='EDIT')
+            if bone_name in obj.data.edit_bones:
+                edit_bone = obj.data.edit_bones[bone_name]
+                edit_bone["NullBoxes"] = "SPELLPOINT"
+            # Switch back to Pose mode
+            bpy.ops.object.mode_set(mode='POSE')
+
+        else:
+            self.report({'WARNING'}, "No active bone selected in Pose or Edit mode")
+        return {'FINISHED'}
+
 class OBJECT_OT_SetFloorProperty(bpy.types.Operator):
     """Set Selected objects Floor tags based on currently viewed floors"""
     bl_idname = "object.set_floor_property"
@@ -139,6 +195,9 @@ class GHOST_MASTER_HELPER_PT_GeneralPanel(bpy.types.Panel):
         if scene.use_armature_flags:
             col = layout.column(align=True)
             col.operator("armature.set_headbone", text="Set Headbone")
+            col.operator("armature.set_chainpoint", text="Set Chainpoint")
+            col.operator("armature.set_spellpoint", text="Set SpellPoint")
+
 class GHOST_MASTER_HELPER_PT_MapEditingPanel(bpy.types.Panel):
     # Creates the map editing panel
     bl_label = "Map Editing"
@@ -195,6 +254,8 @@ def register():
     bpy.utils.register_class(OBJECT_OT_AddLightableProperty)
     bpy.utils.register_class(OBJECT_OT_AddDoubleSidedProperty)
     bpy.utils.register_class(ARMATURE_OT_SetHeadbone)
+    bpy.utils.register_class(ARMATURE_OT_SetChainpoint)  # Register Set Chainpoint Operator
+    bpy.utils.register_class(ARMATURE_OT_SetSpellPoint)  # Register Set SpellPoint Operator
     bpy.utils.register_class(OBJECT_OT_SetFloorProperty)  # Register Set Floor Operator
     bpy.utils.register_class(GHOST_MASTER_HELPER_PT_GeneralPanel)
     bpy.utils.register_class(GHOST_MASTER_HELPER_PT_MapEditingPanel)
@@ -203,6 +264,8 @@ def unregister():
     bpy.utils.unregister_class(OBJECT_OT_AddLightableProperty)
     bpy.utils.unregister_class(OBJECT_OT_AddDoubleSidedProperty)
     bpy.utils.unregister_class(ARMATURE_OT_SetHeadbone)
+    bpy.utils.unregister_class(ARMATURE_OT_SetChainpoint)  # Unregister Set Chainpoint Operator
+    bpy.utils.unregister_class(ARMATURE_OT_SetSpellPoint)  # Unregister Set SpellPoint Operator
     bpy.utils.unregister_class(OBJECT_OT_SetFloorProperty)  # Unregister Set Floor Operator
     bpy.utils.unregister_class(GHOST_MASTER_HELPER_PT_GeneralPanel)
     bpy.utils.unregister_class(GHOST_MASTER_HELPER_PT_MapEditingPanel)
