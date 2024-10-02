@@ -11,12 +11,14 @@ from . import panels
 from . import armature
 from . import flags
 from . import map_editing
+from . import animation
 
 def register():
     panels.register()
     armature.register()
     flags.register()
     map_editing.register()
+    animation.register()
     
     
 def unregister():
@@ -24,3 +26,4 @@ def unregister():
     armature.unregister()
     flags.unregister()
     map_editing.unregister()
+    animation.unregister()

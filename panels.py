@@ -90,15 +90,28 @@ class GHOST_MASTER_HELPER_PT_MapEditingPanel(bpy.types.Panel):
         
         # Set Floor Button
         layout.operator("object.set_floor_property", text="Set Floor")
-        
+
+class GHOST_MASTER_HELPER_PT_GhostMasterAnimationPanel(bpy.types.Panel):
+    """Creates IK setup for Ghost Master rig"""
+    bl_label = "Ghost Master Animation"
+    bl_idname = "OBJECT_PT_ghost_master_anim"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'Ghost Master Helper'
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator("object.ghost_master_ik", text="Set IK")        
         
 def register():
     bpy.utils.register_class(GHOST_MASTER_HELPER_PT_GeneralPanel)
     bpy.utils.register_class(GHOST_MASTER_HELPER_PT_MapEditingPanel)
+    bpy.utils.register_class(GHOST_MASTER_HELPER_PT_GhostMasterAnimationPanel)
 
 def unregister():
     bpy.utils.unregister_class(GHOST_MASTER_HELPER_PT_GeneralPanel)
     bpy.utils.unregister_class(GHOST_MASTER_HELPER_PT_MapEditingPanel)
+    bpy.utils.unregister_class(GHOST_MASTER_HELPER_PT_GhostMasterAnimationPanel)
 
 if __name__ == "__main__":
     register()
