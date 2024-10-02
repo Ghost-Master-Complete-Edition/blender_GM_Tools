@@ -1,14 +1,11 @@
 import bpy
 from mathutils import Vector
+import os
 
 # GHOST MASTER AUTORIG KINDA
 
 # Made by Pat on 02/10/2024
 
-
-##########
-# IK SETUP (for both legs but no arms for now sorry)
-##########
 
 class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
     """Creates IK setup for Ghost Master rig"""
@@ -21,6 +18,11 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
 
         # Ensure that the active object is an armature
         if obj and obj.type == 'ARMATURE':
+
+        #####################################################
+        # IK SETUP (for both legs but no arms for now sorry)
+        #####################################################
+
             # Switch to Edit Mode to modify bones
             bpy.ops.object.mode_set(mode='EDIT')
 
@@ -100,10 +102,47 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             # Add constraints for the right leg
             add_constraints('MDL-jnt-R-thighbone', 'MDL-jnt-R-leg-shin', 'MDL-eff23', 'R')
 
+
+
+            #####################################################
+            # BONE SHAPE IMPORT
+            #####################################################
+
+
+            # Get the path to the assets folder in the plugin directory
+            addon_dir = os.path.dirname(__file__)
+            asset_path = os.path.join(addon_dir, "assets", "GmBones.blend")
+        
+            # Check if the file exists
+            if not os.path.exists(asset_path):
+                self.report({'ERROR'}, f"GmBones file not found: {asset_path}")
+                return {'CANCELLED'}
+        
+            # Create or get the GmBones collection
+            gm_bones_collection = bpy.data.collections.get("GmBones")
+            if gm_bones_collection is None:
+                gm_bones_collection = bpy.data.collections.new("GmBones")
+                bpy.context.scene.collection.children.link(gm_bones_collection)
+
+            # Append all objects from the GmBones file
+            with bpy.data.libraries.load(asset_path, link=False) as (data_from, data_to):
+                data_to.objects = data_from.objects
+
+            # Link imported objects to the GmBones collection
+            for obj in data_to.objects:
+                if obj is not None:
+                    gm_bones_collection.objects.link(obj)
+        
+            # Hide the GmBones collection in the viewport
+            gm_bones_collection.hide_viewport = True
+            gm_bones_collection.hide_render = True
+
+
         else:
             self.report({'ERROR'}, "Select an armature object")
 
         return {'FINISHED'}
+
 
 
 def register():
