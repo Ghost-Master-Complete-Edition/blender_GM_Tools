@@ -19,9 +19,12 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
         # Ensure that the active object is an armature
         if obj and obj.type == 'ARMATURE':
 
-        #####################################################
-        # IK SETUP (for both legs but no arms for now sorry)
-        #####################################################
+            # Store the armature reference
+            armature = obj
+
+            #####################################################
+            # IK SETUP (for both legs but no arms for now sorry)
+            #####################################################
 
             # Switch to Edit Mode to modify bones
             bpy.ops.object.mode_set(mode='EDIT')
@@ -102,12 +105,9 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             # Add constraints for the right leg
             add_constraints('MDL-jnt-R-thighbone', 'MDL-jnt-R-leg-shin', 'MDL-eff23', 'R')
 
-
-
             #####################################################
             # BONE SHAPE IMPORT
             #####################################################
-
 
             # Get the path to the assets folder in the plugin directory
             addon_dir = os.path.dirname(__file__)
@@ -137,12 +137,31 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             gm_bones_collection.hide_viewport = True
             gm_bones_collection.hide_render = True
 
+            #####################################################
+            # BONE SHAPE SETUP
+            #####################################################
+
+            # Assign custom shapes to bones based on object names
+            for obj in bpy.data.objects:
+                # Check if the object name starts with "GmBons-"
+                if obj.name.startswith("GmBons-"):
+                    # Extract the bone name from the object name
+                    bone_name = obj.name[7:]  # Remove "GmBons-" from the name
+                    
+                    # Check if the armature has a bone with the extracted name
+                    if bone_name in armature.data.bones:
+                        bone = armature.pose.bones.get(bone_name)
+                        
+                        # Assign the object as the custom shape for the bone
+                        bone.custom_shape = obj
+                        print(f"Assigned {obj.name} to {bone_name}")
+                    else:
+                        print(f"No bone named {bone_name} found in the armature.")
 
         else:
             self.report({'ERROR'}, "Select an armature object")
 
         return {'FINISHED'}
-
 
 
 def register():
