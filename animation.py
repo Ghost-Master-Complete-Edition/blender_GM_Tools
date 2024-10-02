@@ -8,9 +8,9 @@ import os
 
 
 class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
-    """Creates IK setup for Ghost Master rig"""
+    """Creates rig setup for selected Ghost Master armature"""
     bl_idname = "object.ghost_master_ik"
-    bl_label = "Create Ghost Master IK"
+    bl_label = "Create Ghost Master rig setup"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
@@ -138,8 +138,22 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             gm_bones_collection.hide_render = True
 
             #####################################################
-            # BONE SHAPE SETUP
+            # BONE SHAPE AND BONE COLLECTIONS SETUP
             #####################################################
+
+            # Define the bones assigned to collections
+
+
+
+            # Create Bones collections
+            bcoll_Gm_Rig = armature.data.collections.new("GM Rig")
+            bcoll_Main = armature.data.collections.new("Main", parent=bcoll_Gm_Rig)
+            bcoll_Details = armature.data.collections.new("Details", parent=bcoll_Gm_Rig)
+            bcoll_FK = armature.data.collections.new("FK", parent=bcoll_Gm_Rig)
+            bcoll_IK = armature.data.collections.new("IK", parent=bcoll_Gm_Rig)
+            bcoll_Extra = armature.data.collections.new("Extra", parent=bcoll_Gm_Rig)
+
+
 
             # Assign custom shapes to bones based on object names
             for obj in bpy.data.objects:
@@ -155,8 +169,13 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                         # Assign the object as the custom shape for the bone
                         bone.custom_shape = obj
                         print(f"Assigned {obj.name} to {bone_name}")
+                        
+                        # Assign bone as Main collection
+                        bcoll_Main.assign(bone)
+                        
                     else:
                         print(f"No bone named {bone_name} found in the armature.")
+
 
         else:
             self.report({'ERROR'}, "Select an armature object")
