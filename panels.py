@@ -19,6 +19,9 @@ class GHOST_MASTER_HELPER_PT_GeneralPanel(bpy.types.Panel):
         layout = self.layout
         scene = context.scene
 
+        # Button to Set Specular Tint to Black
+        layout.operator("object.set_specular_tint_to_black", text="Set Specular Tint to Black")
+
         # Render Flags Panel
         row = layout.row()
         row.prop(scene, "use_render_flags", text="Render Flags", icon="TRIA_DOWN" if scene.use_render_flags else "TRIA_RIGHT", emboss=False)
