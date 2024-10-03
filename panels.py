@@ -101,7 +101,12 @@ class GHOST_MASTER_HELPER_PT_GhostMasterAnimationPanel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        layout.operator("object.ghost_master_ik", text="Rig Setup")        
+        layout.operator("object.ghost_master_ik", text="Rig Setup")
+        
+        # Add buttons for FK and IK
+        row = layout.row(align=True)
+        row.operator("object.switch_fk_ik", text="IK").mode = 'IK'
+        row.operator("object.switch_fk_ik", text="FK").mode = 'FK'
         
 def register():
     bpy.utils.register_class(GHOST_MASTER_HELPER_PT_GeneralPanel)

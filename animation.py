@@ -200,9 +200,62 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
         return {'FINISHED'}
 
 
+
+def switch_fk_ik_mode(obj, use_ik):
+    """Switch between FK and IK mode for the armature"""
+    # Get the armature and ensure it's valid
+    if not obj or obj.type != 'ARMATURE':
+        return
+
+    armature = obj.data
+
+    # Define bone collections
+    bones_FK = ["MDL-lfoot", "MDL-rfoot", "MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin", "MDL-jnt-L-thighbone", "MDL-jnt-R-thighbone"]
+    bones_IK = ["L-Foot-Ik", "R-Foot-Ik", "L-Knee-Pole", "R-Knee-Pole"]
+
+    # IK Constraints on shin bones
+    ik_constraints = {
+        'MDL-jnt-L-LEG-shin': 'L-Foot-Ik',
+        'MDL-jnt-R-leg-shin': 'R-Foot-Ik'
+    }
+
+    # Switch between FK and IK visibility
+    for bone_name in bones_FK:
+        bone = obj.pose.bones.get(bone_name)
+        if bone:
+            bone.bone.hide = use_ik  # Hide FK bones when IK is active
+
+    for bone_name in bones_IK:
+        bone = obj.pose.bones.get(bone_name)
+        if bone:
+            bone.bone.hide = not use_ik  # Hide IK bones when FK is active
+
+    # Enable/Disable IK constraints
+    for bone_name, ik_target in ik_constraints.items():
+        bone = obj.pose.bones.get(bone_name)
+        if bone:
+            for constraint in bone.constraints:
+                if constraint.type == 'IK' and constraint.subtarget == ik_target:
+                    constraint.mute = not use_ik  # Mute constraint for FK, unmute for IK
+
+class OBJECT_OT_SwitchFKIK(bpy.types.Operator):
+    """Switch between FK and IK modes"""
+    bl_idname = "object.switch_fk_ik"
+    bl_label = "Switch FK/IK"
+    mode: bpy.props.EnumProperty(items=[('FK', 'FK', ''), ('IK', 'IK', '')])
+
+    def execute(self, context):
+        obj = bpy.context.object
+        use_ik = (self.mode == 'IK')
+        switch_fk_ik_mode(obj, use_ik)
+        return {'FINISHED'}
+
+
 def register():
     bpy.utils.register_class(OBJECT_OT_GhostMasterIK)
+    bpy.utils.register_class(OBJECT_OT_SwitchFKIK)
 
 
 def unregister():
     bpy.utils.unregister_class(OBJECT_OT_GhostMasterIK)
+    bpy.utils.unregister_class(OBJECT_OT_SwitchFKIK)
