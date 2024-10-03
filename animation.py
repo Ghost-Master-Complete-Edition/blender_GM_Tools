@@ -141,19 +141,20 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             # BONE SHAPE AND BONE COLLECTIONS SETUP
             #####################################################
 
-            # Define the bones assigned to collections
-
-
+            # Define the bones assigned to collections as lists
+            bones_FK=["MDL-lfoot", "MDL-rfoot", "MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin", "MDL-jnt-L-thighbone", "MDL-jnt-R-thighbone"]
+            bones_IK=["L-Foot-Ik", "R-Foot-Ik", "L-Knee-Pole", "R-Knee-Pole"]
 
             # Create Bones collections
             bcoll_Gm_Rig = armature.data.collections.new("GM Rig")
             bcoll_Main = armature.data.collections.new("Main", parent=bcoll_Gm_Rig)
-            bcoll_Details = armature.data.collections.new("Details", parent=bcoll_Gm_Rig)
             bcoll_FK = armature.data.collections.new("FK", parent=bcoll_Gm_Rig)
             bcoll_IK = armature.data.collections.new("IK", parent=bcoll_Gm_Rig)
             bcoll_Extra = armature.data.collections.new("Extra", parent=bcoll_Gm_Rig)
 
-
+            # Start by assigning every bone in armature to the Extra collection
+            for bone in armature.data.bones:
+                bcoll_Extra.assign(armature.pose.bones.get(bone.name))
 
             # Assign custom shapes to bones based on object names
             for obj in bpy.data.objects:
@@ -172,6 +173,22 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                         
                         # Assign bone as Main collection
                         bcoll_Main.assign(bone)
+
+                        # Remove bone from Extra collection
+                        bcoll_Extra.unassign(bone)
+                        
+                        # Assign bone as FK collection if it's in the FK list
+                        for a in range (len(bones_FK)):
+                            if bone_name == bones_FK[a]:
+                                bcoll_Main.unassign(bone)
+                                bcoll_FK.assign(bone)
+
+                        # Assign bone as IK collection if it's in the IK list
+                        for a in range (len(bones_IK)):
+                            if bone_name == bones_IK[a]:
+                                bcoll_Main.unassign(bone)
+                                bcoll_IK.assign(bone)
+                        
                         
                     else:
                         print(f"No bone named {bone_name} found in the armature.")
