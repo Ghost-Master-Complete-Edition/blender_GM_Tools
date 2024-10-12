@@ -91,6 +91,9 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                     ik_constraint.pole_subtarget = f'{side_prefix}-Knee-Pole'
                     ik_constraint.chain_count = 2
                     ik_constraint.pole_angle = 0  # Adjust this if needed
+                    
+                    # Mute the IK constraint by default
+                    ik_constraint.mute = True
 
                 # Add Copy Rotation constraint to the foot effector bone
                 pbone_foot = obj.pose.bones.get(foot_eff_name)
@@ -98,6 +101,8 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                     copy_rot_constraint = pbone_foot.constraints.new('COPY_ROTATION')
                     copy_rot_constraint.target = obj
                     copy_rot_constraint.subtarget = f'{side_prefix}-Foot-Ik'
+                    # Mute the Copy Rotation constraint by default
+                    copy_rot_constraint.mute = True
 
             # Add constraints for the left leg
             add_constraints('MDL-jnt-L-thighbone', 'MDL-jnt-L-LEG-shin', 'MDL-eff9', 'L')
@@ -201,54 +206,56 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
 
 
 
-def switch_fk_ik_mode(obj, use_ik):
-    """Switch between FK and IK mode for the armature"""
-    # Get the armature and ensure it's valid
-    if not obj or obj.type != 'ARMATURE':
-        return
-
-    armature = obj.data
-
-    # Define bone collections
-    bones_FK = ["MDL-lfoot", "MDL-rfoot", "MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin", "MDL-jnt-L-thighbone", "MDL-jnt-R-thighbone"]
-    bones_IK = ["L-Foot-Ik", "R-Foot-Ik", "L-Knee-Pole", "R-Knee-Pole"]
-
-    # IK Constraints on shin bones
-    ik_constraints = {
-        'MDL-jnt-L-LEG-shin': 'L-Foot-Ik',
-        'MDL-jnt-R-leg-shin': 'R-Foot-Ik'
-    }
-
-    # Switch between FK and IK visibility
-    for bone_name in bones_FK:
-        bone = obj.pose.bones.get(bone_name)
-        if bone:
-            bone.bone.hide = use_ik  # Hide FK bones when IK is active
-
-    for bone_name in bones_IK:
-        bone = obj.pose.bones.get(bone_name)
-        if bone:
-            bone.bone.hide = not use_ik  # Hide IK bones when FK is active
-
-    # Enable/Disable IK constraints
-    for bone_name, ik_target in ik_constraints.items():
-        bone = obj.pose.bones.get(bone_name)
-        if bone:
-            for constraint in bone.constraints:
-                if constraint.type == 'IK' and constraint.subtarget == ik_target:
-                    constraint.mute = not use_ik  # Mute constraint for FK, unmute for IK
 
 class OBJECT_OT_SwitchFKIK(bpy.types.Operator):
-    """Switch between FK and IK modes"""
+    """Switch between FK and IK"""
     bl_idname = "object.switch_fk_ik"
     bl_label = "Switch FK/IK"
-    mode: bpy.props.EnumProperty(items=[('FK', 'FK', ''), ('IK', 'IK', '')])
-
+   
+    
     def execute(self, context):
+        
         obj = bpy.context.object
-        use_ik = (self.mode == 'IK')
-        switch_fk_ik_mode(obj, use_ik)
+
+		# Check if FK is not hidden
+        if obj.data.collections_all["FK"].is_visible == True:
+                
+            ##############
+            # Switch to IK
+            ##############
+       
+            # Hide FK
+            obj.data.collections_all["FK"].is_visible = False
+
+            # Unhide IK
+            obj.data.collections_all["IK"].is_visible = True
+                    
+            # Unmute all constraints
+            for pbone in obj.pose.bones:
+                for constraint in pbone.constraints:
+                    constraint.mute = False
+        
+                    
+        else:
+            ##############
+			# Switch to FK
+			##############
+					
+            # Hide IK
+            obj.data.collections_all["IK"].is_visible = False
+
+            # Unhide FK
+            obj.data.collections_all["FK"].is_visible = True
+					
+            # Mute all constraints
+            for pbone in obj.pose.bones:
+	            for constraint in pbone.constraints:
+		            constraint.mute = True
+
+     
+
         return {'FINISHED'}
+    
 
 
 def register():
