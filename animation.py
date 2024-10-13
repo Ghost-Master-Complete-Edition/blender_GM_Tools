@@ -30,7 +30,7 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             bpy.ops.object.mode_set(mode='EDIT')
 
             # Function to set up IK for a given leg (left or right)
-            def setup_ik_leg(thighbone_name, shinbone_name, effbone_name, side_prefix):
+            def setup_ik_leg(thighbone_name, shinbone_name, side_prefix):
                 # Move the tail of the specified bones to the head of their child bones
                 for bone_name in [thighbone_name, shinbone_name]:
                     bone = obj.data.edit_bones.get(bone_name)
@@ -41,10 +41,12 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                             bone.tail = child_bone.head
                             print(f"Moved tail of {bone.name} to head of {child_bone.name}.")
 
-                # Create a new bone for Foot IK
+
+
+                # Automatically find the first child of the shin bone to use as the effector
                 shin_bone = obj.data.edit_bones.get(shinbone_name)
-                eff_bone = obj.data.edit_bones.get(effbone_name)
-                if shin_bone and eff_bone:
+                if shin_bone and shin_bone.children:
+                    eff_bone = shin_bone.children[0]  # First child of shinbone
                     ik_bone = obj.data.edit_bones.new(f'{side_prefix}-Foot-Ik')
                     ik_bone.head = eff_bone.head
                     ik_bone.tail = eff_bone.tail
@@ -72,10 +74,10 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
 
             # Setup IK for the left leg
 
-            setup_ik_leg('MDL-jnt-L-thighbone', 'MDL-jnt-L-LEG-shin', 'MDL-eff9', 'L')
+            setup_ik_leg('MDL-jnt-L-thighbone', 'MDL-jnt-L-LEG-shin', 'L')
 
             # Setup IK for the right leg
-            setup_ik_leg('MDL-jnt-R-thighbone', 'MDL-jnt-R-leg-shin', 'MDL-eff23', 'R')
+            setup_ik_leg('MDL-jnt-R-thighbone', 'MDL-jnt-R-leg-shin', 'R')
 
             # Switch back to Object Mode
             bpy.ops.object.mode_set(mode='OBJECT')
@@ -251,10 +253,11 @@ class OBJECT_OT_SwitchFKIK(bpy.types.Operator):
             # Unhide FK
             obj.data.collections_all["FK"].is_visible = True
 					
-            # Mute all constraints
+            # Mute IK constraints
             for pbone in obj.pose.bones:
-	            for constraint in pbone.constraints:
-		            constraint.mute = True
+                for constraint in pbone.constraints:
+                    if constraint.type == 'IK' or constraint.type == 'COPY_ROTATION':
+                        constraint.mute = True
 
      
 
