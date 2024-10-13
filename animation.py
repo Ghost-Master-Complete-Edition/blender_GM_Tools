@@ -71,6 +71,7 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                         pole_bone.parent = parent_bone
 
             # Setup IK for the left leg
+
             setup_ik_leg('MDL-jnt-L-thighbone', 'MDL-jnt-L-LEG-shin', 'MDL-eff9', 'L')
 
             # Setup IK for the right leg
@@ -193,11 +194,14 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                             if bone_name == bones_IK[a]:
                                 bcoll_Main.unassign(bone)
                                 bcoll_IK.assign(bone)
-                        
-                        
+
+                                          
                     else:
                         print(f"No bone named {bone_name} found in the armature.")
 
+            # Hide IK and Extra collections
+            bcoll_IK.is_visible = False
+            bcoll_Extra.is_visible = False
 
         else:
             self.report({'ERROR'}, "Select an armature object")
