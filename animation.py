@@ -313,14 +313,85 @@ class OBJECT_OT_SwitchFKIK(bpy.types.Operator):
      
 
         return {'FINISHED'}
-    
+
+
+
+class OBJECT_OT_DeleteRigSetup(bpy.types.Operator):
+    """Deletes IK bones, constraints and the GmBones collection"""
+    bl_idname = "object.delete_rig_setup"
+    bl_label = "Delete Rig Setup"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        obj = bpy.context.object
+
+		# Ensure that the active object is an armature
+        if obj and obj.type == 'ARMATURE':
+
+            # Store the armature reference
+            armature = obj
+
+            # Switch to Edit Mode to modify bones
+            bpy.ops.object.mode_set(mode='EDIT')
+
+            # Delete the constraint from the shin 
+            for bone_name in ["MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin"]:
+                bone = obj.data.edit_bones.get(bone_name)
+                if bone:
+                    pbone = obj.pose.bones.get(bone_name)
+                    if pbone:
+                        for constraint in pbone.constraints:
+                            if constraint.type == 'IK':
+                                pbone.constraints.remove(constraint)
+
+
+
+
+            # Delete the copy rotation constraint from the first child of shin bones
+            for bone_name in ["MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin"]:
+                bone = obj.data.edit_bones.get(bone_name)
+                if bone:
+                    pbone = obj.pose.bones.get(bone_name)
+                    if pbone:
+                        # Check if the shin bone has children
+                        if bone.children:
+                            eff_bone = pbone.id_data.pose.bones.get(bone.children[0].name)  # Get the pose bone of the first child
+                            if eff_bone:
+                                # Iterate through the constraints of the first child and remove any Copy Rotation constraint
+                                for constraint in eff_bone.constraints:
+                                    if constraint.type == 'COPY_ROTATION':
+                                        eff_bone.constraints.remove(constraint)
+            
+                                
+            # Delete the IK bones and pole targets
+            for bone_name in ["L-Foot-Ik", "R-Foot-Ik", "L-Knee-Pole", "R-Knee-Pole"]:
+                bone = obj.data.edit_bones.get(bone_name)
+                if bone:
+                    obj.data.edit_bones.remove(bone)
+
+            # Switch back to Object Mode
+            bpy.ops.object.mode_set(mode='OBJECT')
+
+            # Remove the everything in the GmBones collection and then the collection itself
+            gm_bones_collection = bpy.data.collections.get("GmBones")
+            if gm_bones_collection:
+                for obj in gm_bones_collection.objects:
+                    bpy.data.objects.remove(obj)
+                bpy.data.collections.remove(gm_bones_collection)
+
+        return {'FINISHED'}
+
+            
+
 
 
 def register():
     bpy.utils.register_class(OBJECT_OT_GhostMasterIK)
     bpy.utils.register_class(OBJECT_OT_SwitchFKIK)
+    bpy.utils.register_class(OBJECT_OT_DeleteRigSetup)
 
 
 def unregister():
     bpy.utils.unregister_class(OBJECT_OT_GhostMasterIK)
     bpy.utils.unregister_class(OBJECT_OT_SwitchFKIK)
+    bpy.utils.unregister_class(OBJECT_OT_DeleteRigSetup)

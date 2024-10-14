@@ -106,6 +106,9 @@ class GHOST_MASTER_HELPER_PT_GhostMasterAnimationPanel(bpy.types.Panel):
         # Add button for FKIK switch
         layout.operator("object.switch_fk_ik", text="Switch FK/IK")
 
+        # Add button for Delete rig Setup
+        layout.operator("object.delete_rig_setup", text="Delete Rig Setup")
+
         
 def register():
     bpy.utils.register_class(GHOST_MASTER_HELPER_PT_GeneralPanel)
