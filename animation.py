@@ -92,28 +92,41 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
 
             # Add IK constraints for both legs
             def add_constraints(thighbone_name, shinbone_name, foot_eff_name, side_prefix):
-                # Add IK constraint to the shin bone
+                # Check if IK constraint already exists
                 pbone_shin = obj.pose.bones.get(shinbone_name)
                 if pbone_shin:
-                    ik_constraint = pbone_shin.constraints.new('IK')
-                    ik_constraint.target = obj
-                    ik_constraint.subtarget = f'{side_prefix}-Foot-Ik'
-                    ik_constraint.pole_target = obj
-                    ik_constraint.pole_subtarget = f'{side_prefix}-Knee-Pole'
-                    ik_constraint.chain_count = 2
-                    ik_constraint.pole_angle = 0  # Adjust this if needed
-                    
-                    # Mute the IK constraint by default
-                    ik_constraint.mute = True
+                    if not any(constraint.type == 'IK' for constraint in pbone_shin.constraints):
+                        # Add IK constraint to the shin bone
+                        ik_constraint = pbone_shin.constraints.new('IK')
+                        ik_constraint.target = obj
+                        ik_constraint.subtarget = f'{side_prefix}-Foot-Ik'
+                        ik_constraint.pole_target = obj
+                        ik_constraint.pole_subtarget = f'{side_prefix}-Knee-Pole'
+                        ik_constraint.chain_count = 2
+                        ik_constraint.pole_angle = 0  # Adjust this if needed
+                        # Mute the IK constraint by default
+                        ik_constraint.mute = True
+                    else:
+                        self.report({'WARNING'}, f"IK constraint already exists on {pbone_shin.name}.")
+                else:
+                    self.report({'WARNING'}, f"Shin bone {shinbone_name} not found.")
 
                 # Add Copy Rotation constraint to the foot effector bone
                 pbone_foot = obj.pose.bones.get(foot_eff_name)
                 if pbone_foot:
-                    copy_rot_constraint = pbone_foot.constraints.new('COPY_ROTATION')
-                    copy_rot_constraint.target = obj
-                    copy_rot_constraint.subtarget = f'{side_prefix}-Foot-Ik'
-                    # Mute the Copy Rotation constraint by default
-                    copy_rot_constraint.mute = True
+                    # Check if Copy Rotation constraint already exists
+                    if not any(constraint.type == 'COPY_ROTATION' for constraint in pbone_foot.constraints):
+                        # Add Copy Rotation constraint to the foot effector bone
+                        copy_rot_constraint = pbone_foot.constraints.new('COPY_ROTATION')
+                        copy_rot_constraint.target = obj
+                        copy_rot_constraint.subtarget = f'{side_prefix}-Foot-Ik'
+
+                        # Mute the Copy Rotation constraint by default
+                        copy_rot_constraint.mute = True
+                    else:
+                        self.report({'WARNING'}, f"Copy Rotation constraint already exists on {pbone_foot.name}.")
+                else:
+                    self.report({'WARNING'}, f"Foot effector bone {foot_eff_name} not found.")
 
             # Add constraints for the left leg
             add_constraints('MDL-jnt-L-thighbone', 'MDL-jnt-L-LEG-shin', 'MDL-eff9', 'L')
