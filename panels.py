@@ -5,11 +5,11 @@ from .map_editing import update_floor_visibility
 
 class GHOST_MASTER_HELPER_PT_GeneralPanel(bpy.types.Panel):
     # Creates the main panel
-    bl_label = "Ghost Master Helper General"
+    bl_label = "Ghost Master Tools General"
     bl_idname = "GHOST_MASTER_HELPER_PT_general_panel"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Ghost Master Helper"
+    bl_category = "GM Tools"
 
     # Define properties
     bpy.types.Scene.use_render_flags = bpy.props.BoolProperty(name="Render Flags", default=False)
@@ -104,7 +104,7 @@ class GHOST_MASTER_HELPER_PT_GhostMasterAnimationPanel(bpy.types.Panel):
         layout.operator("object.ghost_master_ik", text="Rig Setup")
         
         # Add button for FKIK switch
-        layout.operator("object.switch_fk_ik", text="Switch FK/IK")
+        layout.operator("object.switch_legs_fk_ik", text="Switch FK/IK for legs")
 
         # Add button for Delete rig Setup
         layout.operator("object.delete_rig_setup", text="Delete Rig Setup")

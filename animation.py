@@ -264,10 +264,10 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
 
 
 
-class OBJECT_OT_SwitchFKIK(bpy.types.Operator):
-    """Switch between FK and IK"""
-    bl_idname = "object.switch_fk_ik"
-    bl_label = "Switch FK/IK"
+class OBJECT_OT_SwitchLegsFKIK(bpy.types.Operator):
+    """Switch between FK and IK for the legs"""
+    bl_idname = "object.switch_legs_fk_ik"
+    bl_label = "Switch Legs FK/IK"
    
     
     def execute(self, context):
@@ -387,11 +387,11 @@ class OBJECT_OT_DeleteRigSetup(bpy.types.Operator):
 
 def register():
     bpy.utils.register_class(OBJECT_OT_GhostMasterIK)
-    bpy.utils.register_class(OBJECT_OT_SwitchFKIK)
+    bpy.utils.register_class(OBJECT_OT_SwitchLegsFKIK)
     bpy.utils.register_class(OBJECT_OT_DeleteRigSetup)
 
 
 def unregister():
     bpy.utils.unregister_class(OBJECT_OT_GhostMasterIK)
-    bpy.utils.unregister_class(OBJECT_OT_SwitchFKIK)
+    bpy.utils.unregister_class(OBJECT_OT_SwitchLegsFKIK)
     bpy.utils.unregister_class(OBJECT_OT_DeleteRigSetup)

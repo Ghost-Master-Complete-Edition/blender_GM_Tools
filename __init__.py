@@ -1,9 +1,9 @@
 bl_info = {
-    "name": "Ghost Master Helper",
+    "name": "Ghost Master Tools",
     "blender": (4, 2, 0),  # Updated to Blender 4.2
     "category": "Object",
     "author": "Patatifique",
-    "description": "Plugin for Blender 4.2, various functions to help working with Ghost Master.",
+    "description": "Plugin for Blender 4.2, various tools to help working with Ghost Master.",
 }
 
 import bpy
