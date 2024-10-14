@@ -31,6 +31,14 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
 
             # Function to set up IK for a given leg (left or right)
             def setup_ik_leg(thighbone_name, shinbone_name, side_prefix):
+                # Check if IK bones already exist
+                ik_bone_name = f'{side_prefix}-Foot-Ik'
+                pole_bone_name = f'{side_prefix}-Knee-Pole'
+
+                if obj.data.edit_bones.get(ik_bone_name) or obj.data.edit_bones.get(pole_bone_name):
+                    self.report({'WARNING'}, f"IK bones for {side_prefix} leg already exist.")
+                    return  # Skip the setup if bones are found
+
                 # Move the tail of the specified bones to the head of their child bones
                 for bone_name in [thighbone_name, shinbone_name]:
                     bone = obj.data.edit_bones.get(bone_name)
