@@ -133,25 +133,30 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             if not os.path.exists(asset_path):
                 self.report({'ERROR'}, f"GmBones file not found: {asset_path}")
                 return {'CANCELLED'}
-        
-            # Create or get the GmBones collection
+
+            # Check if the GmBones collection is already imported
             gm_bones_collection = bpy.data.collections.get("GmBones")
-            if gm_bones_collection is None:
-                gm_bones_collection = bpy.data.collections.new("GmBones")
-                bpy.context.scene.collection.children.link(gm_bones_collection)
+            if gm_bones_collection is None or len(gm_bones_collection.objects) == 0:   
+                # Create or get the GmBones collection
+                gm_bones_collection = bpy.data.collections.get("GmBones")
+                if gm_bones_collection is None:
+                    gm_bones_collection = bpy.data.collections.new("GmBones")
+                    bpy.context.scene.collection.children.link(gm_bones_collection)
 
-            # Append all objects from the GmBones file
-            with bpy.data.libraries.load(asset_path, link=False) as (data_from, data_to):
-                data_to.objects = data_from.objects
+                # Append all objects from the GmBones file
+                with bpy.data.libraries.load(asset_path, link=False) as (data_from, data_to):
+                    data_to.objects = data_from.objects
 
-            # Link imported objects to the GmBones collection
-            for obj in data_to.objects:
-                if obj is not None:
-                    gm_bones_collection.objects.link(obj)
+                # Link imported objects to the GmBones collection
+                for obj in data_to.objects:
+                    if obj is not None:
+                        gm_bones_collection.objects.link(obj)
         
-            # Hide the GmBones collection in the viewport
-            gm_bones_collection.hide_viewport = True
-            gm_bones_collection.hide_render = True
+                # Hide the GmBones collection in the viewport
+                gm_bones_collection.hide_viewport = True
+                gm_bones_collection.hide_render = True
+            else:
+                self.report({'WARNING'}, "GmBones collection already imported.")
 
             #####################################################
             # BONE SHAPE AND BONE COLLECTIONS SETUP
