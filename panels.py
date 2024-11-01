@@ -6,7 +6,7 @@ from .map_editing import update_floor_visibility
 class GHOST_MASTER_HELPER_PT_GeneralPanel(bpy.types.Panel):
     # Creates the main panel
     bl_label = "Ghost Master Tools General"
-    bl_idname = "GHOST_MASTER_HELPER_PT_general_panel"
+    bl_idname = "GHOST_MASTER_TOOLS_PT_general_panel"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "GM Tools"
@@ -45,7 +45,7 @@ class GHOST_MASTER_HELPER_PT_MapEditingPanel(bpy.types.Panel):
     bl_idname = "GHOST_MASTER_HELPER_PT_map_editing_panel"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Ghost Master Helper"
+    bl_category = "GM Tools"
 
     # Define properties
     bpy.types.Scene.use_map_editing = bpy.props.BoolProperty(name="Map Editing", default=False)
@@ -97,7 +97,7 @@ class GHOST_MASTER_HELPER_PT_GhostMasterAnimationPanel(bpy.types.Panel):
     bl_idname = "OBJECT_PT_ghost_master_anim"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = 'Ghost Master Helper'
+    bl_category = 'GM Tools'
 
     def draw(self, context):
         layout = self.layout
