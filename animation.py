@@ -30,7 +30,7 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             bpy.ops.object.mode_set(mode='EDIT')
 
             # Function to set up IK for a given leg (left or right)
-            def setup_ik_leg(thighbone_name, shinbone_name, side_prefix):
+            def setup_ik(proximal_name, distal_name, side_prefix):
                 # Check if IK bones already exist
                 ik_bone_name = f'{side_prefix}-Foot-Ik'
                 pole_bone_name = f'{side_prefix}-Knee-Pole'
@@ -40,7 +40,7 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                     return  # Skip the setup if bones are found
 
                 # Move the tail of the specified bones to the head of their child bones
-                for bone_name in [thighbone_name, shinbone_name]:
+                for bone_name in [proximal_name, distal_name]:
                     bone = obj.data.edit_bones.get(bone_name)
                     if bone:
                         children = bone.children
@@ -52,9 +52,9 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
 
 
                 # Automatically find the first child of the shin bone to use as the effector
-                shin_bone = obj.data.edit_bones.get(shinbone_name)
-                if shin_bone and shin_bone.children:
-                    eff_bone = shin_bone.children[0]  # First child of shinbone
+                distal_bone = obj.data.edit_bones.get(distal_name)
+                if distal_bone and distal_bone.children:
+                    eff_bone = distal_bone.children[0]  # First child of shinbone
                     ik_bone = obj.data.edit_bones.new(f'{side_prefix}-Foot-Ik')
                     ik_bone.head = eff_bone.head
                     ik_bone.tail = eff_bone.tail
@@ -67,9 +67,9 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                         ik_bone.use_connect = False
 
                 # Create the knee pole vector
-                thigh_bone = obj.data.edit_bones.get(thighbone_name)
-                if thigh_bone and shin_bone:
-                    knee_pos = (thigh_bone.head + shin_bone.tail) / 2
+                proximal_bone = obj.data.edit_bones.get(proximal_name)
+                if proximal_bone and distal_bone:
+                    knee_pos = (proximal_bone.head + distal_bone.tail) / 2
                     knee_offset = Vector((0.0, -0.5, 0.0))
                     pole_position = knee_pos + knee_offset
 
@@ -82,18 +82,18 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
 
             # Setup IK for the left leg
 
-            setup_ik_leg('MDL-jnt-L-thighbone', 'MDL-jnt-L-LEG-shin', 'L')
+            setup_ik('MDL-jnt-L-thighbone', 'MDL-jnt-L-LEG-shin', 'L')
 
             # Setup IK for the right leg
-            setup_ik_leg('MDL-jnt-R-thighbone', 'MDL-jnt-R-leg-shin', 'R')
+            setup_ik('MDL-jnt-R-thighbone', 'MDL-jnt-R-leg-shin', 'R')
 
             # Switch back to Object Mode
             bpy.ops.object.mode_set(mode='OBJECT')
 
             # Add IK constraints for both legs
-            def add_constraints(thighbone_name, shinbone_name, foot_eff_name, side_prefix):
+            def add_constraints(proximal_name, distal_name, foot_eff_name, side_prefix):
                 # Check if IK constraint already exists
-                pbone_shin = obj.pose.bones.get(shinbone_name)
+                pbone_shin = obj.pose.bones.get(distal_name)
                 if pbone_shin:
                     if not any(constraint.type == 'IK' for constraint in pbone_shin.constraints):
                         # Add IK constraint to the shin bone
@@ -109,7 +109,7 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                     else:
                         self.report({'WARNING'}, f"IK constraint already exists on {pbone_shin.name}.")
                 else:
-                    self.report({'WARNING'}, f"Shin bone {shinbone_name} not found.")
+                    self.report({'WARNING'}, f"Shin bone {distal_name} not found.")
 
                 # Add Copy Rotation constraint to the foot effector bone
                 pbone_foot = obj.pose.bones.get(foot_eff_name)
