@@ -109,6 +109,9 @@ class GHOST_MASTER_HELPER_PT_GhostMasterAnimationPanel(bpy.types.Panel):
         # Add button for Delete rig Setup
         layout.operator("object.delete_rig_setup", text="Delete Rig Setup")
 
+        #Add button for Sanity Check
+        layout.operator("object.sanity_check", text="Sanity Check")
+
         
 def register():
     bpy.utils.register_class(GHOST_MASTER_HELPER_PT_GeneralPanel)

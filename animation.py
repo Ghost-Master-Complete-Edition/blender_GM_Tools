@@ -422,17 +422,89 @@ class OBJECT_OT_DeleteRigSetup(bpy.types.Operator):
 
         return {'FINISHED'}
 
-            
 
+           
+def sanity_check():
+    issues = []
+
+    # Check for meshes with more than one material
+    for obj in bpy.data.objects:
+        if obj.type == 'MESH' and len(obj.data.materials) > 1:
+            issues.append(f"The mesh '{obj.name}' has more than one material.")
+
+    # Check for one root bone at default values and no animation
+    root_bone = None
+    for obj in bpy.data.objects:
+        if obj.type == 'ARMATURE':
+            for bone in obj.data.bones:
+                if bone.parent is None:  # Root bone
+                    if root_bone:
+                        issues.append(f"More than one root bone found in '{obj.name}'.")
+                    else:
+                        root_bone = bone
+                        bone_pose = obj.pose.bones[bone.name]
+                        if not (round(bone_pose.location.x, 3) == 0 and
+                                round(bone_pose.location.y, 3) == 0 and
+                                round(bone_pose.location.z, 3) == 0):
+                            issues.append(f"The root bone '{bone.name}' does not have the default location (0, 0, 0).")
+                        if not (round(bone_pose.rotation_euler.x, 3) == 0 and
+                                round(bone_pose.rotation_euler.y, 3) == 0 and
+                                round(bone_pose.rotation_euler.z, 3) == 0):
+                            issues.append(f"The root bone '{bone.name}' does not have the default rotation (0, 0, 0).")
+
+                        if bone.name in [action.name for action in bpy.data.actions]:
+                            issues.append(f"The root bone '{bone.name}' has animation data.")
+
+    if not root_bone:
+        issues.append("No root bone found.")
+
+    # Check that all bones are under the root bone's hierarchy
+    if root_bone:
+        for obj in bpy.data.objects:
+            if obj.type == 'ARMATURE':
+                for bone in obj.data.bones:
+                    if bone.parent is None and bone != root_bone:
+                        issues.append(f"The bone '{bone.name}' is not under the root bone '{root_bone.name}'.")
+
+    # Check that the scale of all bones is 1,1,1
+    for obj in bpy.data.objects:
+        if obj.type == 'ARMATURE':
+            for bone in obj.pose.bones:
+                if not all(round(s, 3) == 1.0 for s in bone.scale):
+                    issues.append(f"The bone '{bone.name}' does not have a scale of 1,1,1.")
+
+    # Check for actions with only one keyframe
+    for action in bpy.data.actions:
+        if len(action.fcurves) == 1 and all(len(fc.keyframe_points) == 1 for fc in action.fcurves):
+            issues.append(f"The action '{action.name}' has only one keyframe.")
+
+    return issues
+
+# Button for the Sanity Check in the UI
+class OBJECT_OT_SanityCheck(bpy.types.Operator):
+    bl_idname = "object.sanity_check"
+    bl_label = "Sanity Check"
+    bl_description = "Check for rig and animation issues"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        issues = sanity_check()
+        if issues:
+            for issue in issues:
+                self.report({'WARNING'}, issue)
+        else:
+            self.report({'INFO'}, "All checks passed!")
+        return {'FINISHED'}
 
 
 def register():
     bpy.utils.register_class(OBJECT_OT_GhostMasterIK)
     bpy.utils.register_class(OBJECT_OT_SwitchLegsFKIK)
     bpy.utils.register_class(OBJECT_OT_DeleteRigSetup)
-
+    bpy.utils.register_class(OBJECT_OT_SanityCheck)
 
 def unregister():
     bpy.utils.unregister_class(OBJECT_OT_GhostMasterIK)
     bpy.utils.unregister_class(OBJECT_OT_SwitchLegsFKIK)
     bpy.utils.unregister_class(OBJECT_OT_DeleteRigSetup)
+    bpy.utils.unregister_class(OBJECT_OT_SanityCheck)
