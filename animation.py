@@ -105,11 +105,11 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             # Setup IK for the right leg
             setup_ik('Leg', 'MDL-jnt-R-thighbone', 'MDL-jnt-R-leg-shin', 'R')
 
-            # Setup IK for the left arm
-            setup_ik('Arm', 'MDL-jnt-L-bicepBONE', 'MDL-jnt-L-FOREARM', 'L')
+            # # Setup IK for the left arm
+            # setup_ik('Arm', 'MDL-jnt-L-bicepBONE', 'MDL-jnt-L-FOREARM', 'L')
 
-            # Setup IK for the right arm
-            setup_ik('Arm', 'MDL-jnt-R-bicepBONE', 'MDL-jnt49_2-RFarm', 'R')
+            # # Setup IK for the right arm
+            # setup_ik('Arm', 'MDL-jnt-R-bicepBONE', 'MDL-jnt49_2-RFarm', 'R')
 
 
             # Switch back to Object Mode
