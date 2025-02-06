@@ -29,18 +29,14 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             # Switch to Edit Mode to modify bones
             bpy.ops.object.mode_set(mode='EDIT')
 
-            # Function to set up IK for a given limb (left or right)
-            def setup_ik(limb, proximal_name, distal_name, side_prefix):
+            # Function to set up IK for a given leg (left or right)
+            def setup_ik(proximal_name, distal_name, side_prefix):
                 # Check if IK bones already exist
-                if limb == 'Leg':
-                    ik_bone_name = f'{side_prefix}-Foot-Ik'
-                    pole_bone_name = f'{side_prefix}-Knee-Pole'
-                elif limb == 'Arm':
-                    ik_bone_name = f'{side_prefix}-Hand-Ik'
-                    pole_bone_name = f'{side_prefix}-Elbow-Pole'
+                ik_bone_name = f'{side_prefix}-Foot-Ik'
+                pole_bone_name = f'{side_prefix}-Knee-Pole'
 
                 if obj.data.edit_bones.get(ik_bone_name) or obj.data.edit_bones.get(pole_bone_name):
-                    self.report({'WARNING'}, f"IK bones for {side_prefix} {limb} already exist.")
+                    self.report({'WARNING'}, f"IK bones for {side_prefix} leg already exist.")
                     return  # Skip the setup if bones are found
 
                 # Move the tail of the specified bones to the head of their child bones
@@ -55,125 +51,88 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
 
 
 
-                # Automatically find the first child of the distal bone to use as the effector
+                # Automatically find the first child of the shin bone to use as the effector
                 distal_bone = obj.data.edit_bones.get(distal_name)
                 if distal_bone and distal_bone.children:
                     eff_bone = distal_bone.children[0]  # First child of shinbone
-
-                    # Create the IK bone
-                    if limb == 'Leg':
-                        ik_bone = obj.data.edit_bones.new(f'{side_prefix}-Foot-Ik')
-
-                    elif limb == 'Arm':
-                        ik_bone = obj.data.edit_bones.new(f'{side_prefix}-Hand-Ik')
-                   
+                    ik_bone = obj.data.edit_bones.new(f'{side_prefix}-Foot-Ik')
                     ik_bone.head = eff_bone.head
                     ik_bone.tail = eff_bone.tail
                     ik_bone.roll = eff_bone.roll
                     ik_bone.use_deform = False
-                    parent_bone = obj.data.edit_bones.get('MDL-GOD')
 
+                    parent_bone = obj.data.edit_bones.get('MDL-GOD')
                     if parent_bone:
                         ik_bone.parent = parent_bone
                         ik_bone.use_connect = False
 
-                # Create the pole vector
+                # Create the knee pole vector
                 proximal_bone = obj.data.edit_bones.get(proximal_name)
                 if proximal_bone and distal_bone:
-                    pole_pos = (proximal_bone.head + distal_bone.tail) / 2
-                    pole_offset = Vector((0.0, -0.5, 0.0))
-                    pole_position = pole_pos + pole_offset
+                    knee_pos = (proximal_bone.head + distal_bone.tail) / 2
+                    knee_offset = Vector((0.0, -0.5, 0.0))
+                    pole_position = knee_pos + knee_offset
 
-                    if limb == 'Leg':
-                        pole_bone = obj.data.edit_bones.new(f'{side_prefix}-Knee-Pole')
-                        pole_bone.head = pole_position
-                        pole_bone.tail = pole_position + Vector((0.0, 0.2, 0.0))
-                    
-                    elif limb == 'Arm':
-                        pole_bone = obj.data.edit_bones.new(f'{side_prefix}-Elbow-Pole')
-                        pole_bone.head = pole_position
-                        pole_bone.tail = pole_position + Vector((0.0, -0.2, 0.0))
-                    
+                    pole_bone = obj.data.edit_bones.new(f'{side_prefix}-Knee-Pole')
+                    pole_bone.head = pole_position
+                    pole_bone.tail = pole_position + Vector((0.0, 0.2, 0.0))
                     pole_bone.use_deform = False
                     if parent_bone:
                         pole_bone.parent = parent_bone
 
             # Setup IK for the left leg
 
-            setup_ik('Leg', 'MDL-jnt-L-thighbone', 'MDL-jnt-L-LEG-shin', 'L')
+            setup_ik('MDL-jnt-L-thighbone', 'MDL-jnt-L-LEG-shin', 'L')
 
             # Setup IK for the right leg
-            setup_ik('Leg', 'MDL-jnt-R-thighbone', 'MDL-jnt-R-leg-shin', 'R')
-
-            # Setup IK for the left arm
-            setup_ik('Arm', 'MDL-jnt-L-bicepBONE', 'MDL-jnt-L-FOREARM', 'L')
-
-            # Setup IK for the right arm
-            setup_ik('Arm', 'MDL-jnt-R-bicepBONE', 'MDL-jnt49_2-RFarm', 'R')
-
+            setup_ik('MDL-jnt-R-thighbone', 'MDL-jnt-R-leg-shin', 'R')
 
             # Switch back to Object Mode
             bpy.ops.object.mode_set(mode='OBJECT')
 
-            # Add IK constraints
-            def add_constraints(limb, proximal_name, distal_name, terminal_eff_name, side_prefix):
+            # Add IK constraints for both legs
+            def add_constraints(proximal_name, distal_name, foot_eff_name, side_prefix):
                 # Check if IK constraint already exists
-                pbone_distal = obj.pose.bones.get(distal_name)
-                if pbone_distal:
-                    if not any(constraint.type == 'IK' for constraint in pbone_distal.constraints):
+                pbone_shin = obj.pose.bones.get(distal_name)
+                if pbone_shin:
+                    if not any(constraint.type == 'IK' for constraint in pbone_shin.constraints):
                         # Add IK constraint to the shin bone
-                        ik_constraint = pbone_distal.constraints.new('IK')
+                        ik_constraint = pbone_shin.constraints.new('IK')
                         ik_constraint.target = obj
+                        ik_constraint.subtarget = f'{side_prefix}-Foot-Ik'
                         ik_constraint.pole_target = obj
+                        ik_constraint.pole_subtarget = f'{side_prefix}-Knee-Pole'
                         ik_constraint.chain_count = 2
-                        
-                        if limb == 'Leg':
-                            ik_constraint.subtarget = f'{side_prefix}-Foot-Ik'
-                            ik_constraint.pole_subtarget = f'{side_prefix}-Knee-Pole'
-                            ik_constraint.pole_angle = 0  # Adjust this if needed
-                        elif limb == 'Arm':
-                            ik_constraint.subtarget = f'{side_prefix}-Hand-Ik'
-                            ik_constraint.pole_subtarget = f'{side_prefix}-Elbow-Pole'
-                            ik_constraint.pole_angle = 180  # Adjust this if needed
-                        
+                        ik_constraint.pole_angle = 0  # Adjust this if needed
                         # Mute the IK constraint by default
                         ik_constraint.mute = True
                     else:
-                        self.report({'WARNING'}, f"IK constraint already exists on {pbone_distal.name}.")
+                        self.report({'WARNING'}, f"IK constraint already exists on {pbone_shin.name}.")
                 else:
-                    self.report({'WARNING'}, f"{limb} bone {distal_name} not found.")
+                    self.report({'WARNING'}, f"Shin bone {distal_name} not found.")
 
-                # Add Copy Rotation constraint to the terminal effector bone (Foot or Hand)
-                pbon_terminal = obj.pose.bones.get(terminal_eff_name)
-                if pbon_terminal:
+                # Add Copy Rotation constraint to the foot effector bone
+                pbone_foot = obj.pose.bones.get(foot_eff_name)
+                if pbone_foot:
                     # Check if Copy Rotation constraint already exists
-                    if not any(constraint.type == 'COPY_ROTATION' for constraint in pbon_terminal.constraints):
+                    if not any(constraint.type == 'COPY_ROTATION' for constraint in pbone_foot.constraints):
                         # Add Copy Rotation constraint to the foot effector bone
-                        copy_rot_constraint = pbon_terminal.constraints.new('COPY_ROTATION')
+                        copy_rot_constraint = pbone_foot.constraints.new('COPY_ROTATION')
                         copy_rot_constraint.target = obj
-                        if limb == 'Leg':
-                            copy_rot_constraint.subtarget = f'{side_prefix}-Foot-Ik'
-                        elif limb == 'Arm':
-                            copy_rot_constraint.subtarget = f'{side_prefix}-Hand-Ik'
+                        copy_rot_constraint.subtarget = f'{side_prefix}-Foot-Ik'
 
                         # Mute the Copy Rotation constraint by default
                         copy_rot_constraint.mute = True
                     else:
-                        self.report({'WARNING'}, f"Copy Rotation constraint already exists on {pbon_terminal.name}.")
+                        self.report({'WARNING'}, f"Copy Rotation constraint already exists on {pbone_foot.name}.")
                 else:
-                    self.report({'WARNING'}, f"Foot effector bone {terminal_eff_name} not found.")
+                    self.report({'WARNING'}, f"Foot effector bone {foot_eff_name} not found.")
 
             # Add constraints for the left leg
-            add_constraints('Leg', 'MDL-jnt-L-thighbone', 'MDL-jnt-L-LEG-shin', 'MDL-eff9', 'L')
+            add_constraints('MDL-jnt-L-thighbone', 'MDL-jnt-L-LEG-shin', 'MDL-eff9', 'L')
 
             # Add constraints for the right leg
-            add_constraints('Leg', 'MDL-jnt-R-thighbone', 'MDL-jnt-R-leg-shin', 'MDL-eff23', 'R')
-
-            # Add constraints for the left arm
-            add_constraints('Arm', 'MDL-jnt-L-bicepBONE', 'MDL-jnt-L-FOREARM', 'MDL-eff45', 'L')
-
-            # Add constraints for the right arm
-            add_constraints('Arm', 'MDL-jnt-R-bicepBONE', 'MDL-jnt49_2-RFarm', 'MDL-eff50', 'R')
+            add_constraints('MDL-jnt-R-thighbone', 'MDL-jnt-R-leg-shin', 'MDL-eff23', 'R')
 
             #####################################################
             # BONE SHAPE IMPORT
