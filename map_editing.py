@@ -28,6 +28,12 @@ def update_floor_visibility(self, context):
                 (context.scene.show_floor_1 and '1' in object_floors)
             )
             obj.hide_set(not is_visible)
+
+def update_collider_visibility(self, context):
+    """Update visibility of objects with the 'IS_COLLIDER' custom property set to 'TRUE'."""
+    for obj in bpy.data.objects:
+        if obj.type == 'MESH' and obj.get("IS_COLLIDER") == "TRUE":
+            obj.hide_set(not context.scene.show_collider_objects)
             
 class OBJECT_OT_SetFloorProperty(bpy.types.Operator):
     """Set Selected objects Floor tags based on currently viewed floors"""

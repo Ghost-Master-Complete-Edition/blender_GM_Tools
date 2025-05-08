@@ -2,6 +2,7 @@ import bpy
 from .map_editing import update_ice_layer_visibility
 from .map_editing import update_invisible_flag_visibility
 from .map_editing import update_floor_visibility
+from .map_editing import update_collider_visibility
 
 class GHOST_MASTER_HELPER_PT_GeneralPanel(bpy.types.Panel):
     # Creates the main panel
@@ -45,6 +46,8 @@ class GHOST_MASTER_HELPER_PT_MapEditingPanel(bpy.types.Panel):
 
     bpy.types.Scene.show_ice_layer = bpy.props.BoolProperty(name="Show Ice Layer", default=True, update=update_ice_layer_visibility)
     bpy.types.Scene.show_invisible_flag = bpy.props.BoolProperty(name="Show Invisible Flag", default=False, update=update_invisible_flag_visibility)
+    bpy.types.Scene.show_collider_objects = bpy.props.BoolProperty(name="Show Colliders", default=False, update=update_collider_visibility)
+
 
     bpy.types.Scene.show_floor_1 = bpy.props.BoolProperty(name="Floor 1", default=True, update=update_floor_visibility)
     bpy.types.Scene.show_floor_2 = bpy.props.BoolProperty(name="Floor 2", default=True, update=update_floor_visibility)
@@ -61,6 +64,7 @@ class GHOST_MASTER_HELPER_PT_MapEditingPanel(bpy.types.Panel):
         col = layout.column(align=True)
         col.prop(scene, "show_ice_layer", text="Show Ice Layer", toggle=True)
         col.prop(scene, "show_invisible_flag", text="Show Invisible Flag", toggle=True)
+        col.prop(scene, "show_collider_objects", text="Show Colliders", toggle=True)
 
         # Add a separator (space) between "Show Invisible Flag" and "Current Floor View"
         layout.separator()
