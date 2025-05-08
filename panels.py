@@ -22,14 +22,6 @@ class GHOST_MASTER_HELPER_PT_GeneralPanel(bpy.types.Panel):
         # Button to Set Specular Tint to Black
         layout.operator("object.set_specular_tint_to_black", text="Set Specular Tint to Black")
 
-        # Render Flags Panel
-        row = layout.row()
-        row.prop(scene, "use_render_flags", text="Render Flags", icon="TRIA_DOWN" if scene.use_render_flags else "TRIA_RIGHT", emboss=False)
-        if scene.use_render_flags:
-            col = layout.column(align=True)
-            col.operator("object.add_lightable_property", text="Lightable")
-            col.operator("object.add_double_sided_property", text="Double Sided")
-
         # Armature Panel
         row = layout.row()
         row.prop(scene, "use_armature_flags", text="Armature", icon="TRIA_DOWN" if scene.use_armature_flags else "TRIA_RIGHT", emboss=False)
