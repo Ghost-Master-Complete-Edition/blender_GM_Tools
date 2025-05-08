@@ -108,16 +108,33 @@ class GHOST_MASTER_HELPER_PT_GhostMasterAnimationPanel(bpy.types.Panel):
         #Add button for Sanity Check
         layout.operator("object.sanity_check", text="Sanity Check")
 
+
+class GHOST_MASTER_HELPER_PT_EntityEditingPanel(bpy.types.Panel):
+    # Creates the entity editing panel
+    bl_label = "Entity Editing"
+    bl_idname = "GHOST_MASTER_HELPER_PT_entity_editing_panel"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "GM Tools"
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+
+        #Add a button to transfer nullboxes
+        layout.operator("object.transfer_nullboxes", text="Transfer Nullboxes")
         
 def register():
     bpy.utils.register_class(GHOST_MASTER_HELPER_PT_GeneralPanel)
     bpy.utils.register_class(GHOST_MASTER_HELPER_PT_MapEditingPanel)
     bpy.utils.register_class(GHOST_MASTER_HELPER_PT_GhostMasterAnimationPanel)
+    bpy.utils.register_class(GHOST_MASTER_HELPER_PT_EntityEditingPanel)
 
 def unregister():
     bpy.utils.unregister_class(GHOST_MASTER_HELPER_PT_GeneralPanel)
     bpy.utils.unregister_class(GHOST_MASTER_HELPER_PT_MapEditingPanel)
     bpy.utils.unregister_class(GHOST_MASTER_HELPER_PT_GhostMasterAnimationPanel)
+    bpy.utils.unregister_class(GHOST_MASTER_HELPER_PT_EntityEditingPanel)
 
 if __name__ == "__main__":
     register()
