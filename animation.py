@@ -43,14 +43,37 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                     self.report({'WARNING'}, f"IK bones for {side_prefix} {limb} already exist.")
                     return  # Skip the setup if bones are found
 
-                # Move the tail of the specified bones to the head of their child bones
+
+
+                # Create proxy bones for the proximal and distal bones
+                # Duplicate bones to create proxies
+                proxy_proximal = obj.data.edit_bones.new(f'{proximal_name}_proxy')
+                proxy_distal = obj.data.edit_bones.new(f'{distal_name}_proxy')
+
+                original_proximal = obj.data.edit_bones.get(proximal_name)
+                original_distal = obj.data.edit_bones.get(distal_name)
+
+
+                # Copy transforms from original to proxy
+                for proxy, original in [(proxy_proximal, original_proximal), (proxy_distal, original_distal)]:
+                    proxy.head = original.head.copy()
+                    proxy.tail = original.tail.copy()
+                    proxy.roll = original.roll
+                    proxy.use_deform = False
+                    parent_bone = obj.data.edit_bones.get('MDL-GOD')
+                    if parent_bone:
+                        proxy.parent = parent_bone
+                        proxy.use_connect = False
+
+                # Move the tail of the specified proxy bones to the head of their original bones child
                 for bone_name in [proximal_name, distal_name]:
                     bone = obj.data.edit_bones.get(bone_name)
+                    proxy_bone = obj.data.edit_bones.get(f'{bone_name}_proxy')
                     if bone:
                         children = bone.children
                         if children:
                             child_bone = children[0]
-                            bone.tail = child_bone.head
+                            proxy_bone.tail = child_bone.head
                             print(f"Moved tail of {bone.name} to head of {child_bone.name}.")
 
 
