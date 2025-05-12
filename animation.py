@@ -43,22 +43,54 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                     self.report({'WARNING'}, f"IK bones for {side_prefix} {limb} already exist.")
                     return  # Skip the setup if bones are found
 
-                # Move the tail of the specified bones to the head of their child bones
+
+
+                # Create proxy bones for the proximal and distal bones
+                # Duplicate bones to create proxies
+                proxy_proximal = obj.data.edit_bones.new(f'{proximal_name}_proxy')
+                proxy_distal = obj.data.edit_bones.new(f'{distal_name}_proxy')
+
+                original_proximal = obj.data.edit_bones.get(proximal_name)
+                original_distal = obj.data.edit_bones.get(distal_name)
+
+
+                # Copy transforms from original to proxy
+                for proxy, original in [(proxy_proximal, original_proximal), (proxy_distal, original_distal)]:
+                    proxy.head = original.head.copy()
+                    proxy.tail = original.tail.copy()
+                    proxy.roll = original.roll
+                    proxy.use_deform = False
+                    parent_bone = obj.data.edit_bones.get('MDL-GOD')
+                    if parent_bone:
+                        proxy.parent = parent_bone
+                        proxy.use_connect = False
+
+                # Move the tail of the specified proxy bones to the head of their original bones child
                 for bone_name in [proximal_name, distal_name]:
                     bone = obj.data.edit_bones.get(bone_name)
+                    proxy_bone = obj.data.edit_bones.get(f'{bone_name}_proxy')
                     if bone:
                         children = bone.children
                         if children:
                             child_bone = children[0]
-                            bone.tail = child_bone.head
+                            proxy_bone.tail = child_bone.head
                             print(f"Moved tail of {bone.name} to head of {child_bone.name}.")
 
+                # Parent proxy distal to proxy proximal
+                if proxy_proximal and proxy_distal:
+                    proxy_distal.parent = proxy_proximal
+                    proxy_distal.use_connect = True
 
+                # Automatically find the parent of the proximal bone, parent the proximal proxy to it
+                if original_proximal and original_proximal.parent:
+                    parent_bone = obj.data.edit_bones.get(original_proximal.parent.name)
+                    if parent_bone:
+                        proxy_proximal.parent = parent_bone
+                        proxy_proximal.use_connect = False
 
                 # Automatically find the first child of the distal bone to use as the effector
-                distal_bone = obj.data.edit_bones.get(distal_name)
-                if distal_bone and distal_bone.children:
-                    eff_bone = distal_bone.children[0]  # First child of shinbone
+                if original_distal and original_distal.children:
+                    eff_bone = original_distal.children[0]  # First child of shinbone
 
                     # Create the IK bone
                     if limb == 'Leg':
@@ -78,9 +110,8 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                         ik_bone.use_connect = False
 
                 # Create the pole vector
-                proximal_bone = obj.data.edit_bones.get(proximal_name)
-                if proximal_bone and distal_bone:
-                    pole_pos = (proximal_bone.head + distal_bone.tail) / 2
+                if proxy_proximal and proxy_distal:
+                    pole_pos = (proxy_proximal.head + proxy_distal.tail) / 2
                     pole_offset = Vector((0.0, -0.5, 0.0))
                     pole_position = pole_pos + pole_offset
 
@@ -117,12 +148,41 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
 
             # Add IK constraints
             def add_constraints(limb, proximal_name, distal_name, terminal_eff_name, side_prefix):
-                # Check if IK constraint already exists
-                pbone_distal = obj.pose.bones.get(distal_name)
-                if pbone_distal:
-                    if not any(constraint.type == 'IK' for constraint in pbone_distal.constraints):
+                # Constraint proxy bones to the original bones
+                proxy_proximal = obj.pose.bones.get(f'{proximal_name}_proxy')
+                proxy_distal = obj.pose.bones.get(f'{distal_name}_proxy')
+
+                original_proximal = obj.pose.bones.get(proximal_name)
+                original_distal = obj.pose.bones.get(distal_name)
+
+                # Proximal bone constraints
+                if original_proximal and proxy_proximal:
+                    if not any(c.type == 'CHILD_OF' and c.subtarget == proxy_proximal.name for c in original_proximal.constraints):
+                        childof_constraint = original_proximal.constraints.new('CHILD_OF')
+                        childof_constraint.name = "ChildOf_Proxy"
+                        childof_constraint.target = obj
+                        childof_constraint.subtarget = proxy_proximal.name
+                        childof_constraint.use_location_x = False
+                        childof_constraint.use_location_y = False
+                        childof_constraint.use_location_z = False
+                        childof_constraint.mute = True
+
+                # Distal bone constraints
+                if original_distal and proxy_distal:
+                    if not any(c.type == 'COPY_ROTATION' and c.subtarget == proxy_distal.name for c in original_distal.constraints):
+                        copyrot_constraint = original_distal.constraints.new('COPY_ROTATION')
+                        copyrot_constraint.name = "CopyRot_Proxy"
+                        copyrot_constraint.target = obj
+                        copyrot_constraint.subtarget = proxy_distal.name
+                        copyrot_constraint.target_space = 'LOCAL_OWNER_ORIENT'
+                        copyrot_constraint.owner_space = 'LOCAL'
+                        childof_constraint.mute = True
+
+                # Normal IK contraints
+                if proxy_distal:
+                    if not any(constraint.type == 'IK' for constraint in proxy_distal.constraints):
                         # Add IK constraint to the shin bone
-                        ik_constraint = pbone_distal.constraints.new('IK')
+                        ik_constraint = proxy_distal.constraints.new('IK')
                         ik_constraint.target = obj
                         ik_constraint.pole_target = obj
                         ik_constraint.chain_count = 2
@@ -139,7 +199,7 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                         # Mute the IK constraint by default
                         ik_constraint.mute = True
                     else:
-                        self.report({'WARNING'}, f"IK constraint already exists on {pbone_distal.name}.")
+                        self.report({'WARNING'}, f"IK constraint already exists on {proxy_distal.name}.")
                 else:
                     self.report({'WARNING'}, f"{limb} bone {distal_name} not found.")
 
@@ -170,10 +230,10 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             add_constraints('Leg', 'MDL-jnt-R-thighbone', 'MDL-jnt-R-leg-shin', 'MDL-eff23', 'R')
 
             # Add constraints for the left arm
-            add_constraints('Arm', 'MDL-jnt-L-bicepBONE', 'MDL-jnt-L-FOREARM', 'MDL-eff45', 'L')
+            # add_constraints('Arm', 'MDL-jnt-L-bicepBONE', 'MDL-jnt-L-FOREARM', 'MDL-eff45', 'L')
 
-            # Add constraints for the right arm
-            add_constraints('Arm', 'MDL-jnt-R-bicepBONE', 'MDL-jnt49_2-RFarm', 'MDL-eff50', 'R')
+            # # Add constraints for the right arm
+            # add_constraints('Arm', 'MDL-jnt-R-bicepBONE', 'MDL-jnt49_2-RFarm', 'MDL-eff50', 'R')
 
             #####################################################
             # BONE SHAPE IMPORT
@@ -348,7 +408,7 @@ class OBJECT_OT_SwitchLegsFKIK(bpy.types.Operator):
             # Mute IK constraints
             for pbone in obj.pose.bones:
                 for constraint in pbone.constraints:
-                    if constraint.type == 'IK' or constraint.type == 'COPY_ROTATION':
+                    if constraint.type == 'IK' or constraint.type == 'COPY_ROTATION' or constraint.type == 'CHILD_OF':
                         constraint.mute = True
 
      
@@ -375,17 +435,14 @@ class OBJECT_OT_DeleteRigSetup(bpy.types.Operator):
             # Switch to Edit Mode to modify bones
             bpy.ops.object.mode_set(mode='EDIT')
 
-            # Delete the constraint from the shin 
-            for bone_name in ["MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin"]:
+            # Delete the constraints from the shin and thighbones
+            for bone_name in ["MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin", "MDL-jnt-L-thighbone", "MDL-jnt-R-thighbone"]:
                 bone = obj.data.edit_bones.get(bone_name)
                 if bone:
                     pbone = obj.pose.bones.get(bone_name)
                     if pbone:
                         for constraint in pbone.constraints:
-                            if constraint.type == 'IK':
-                                pbone.constraints.remove(constraint)
-
-
+                            pbone.constraints.remove(constraint)
 
 
             # Delete the copy rotation constraint from the first child of shin bones
@@ -406,6 +463,12 @@ class OBJECT_OT_DeleteRigSetup(bpy.types.Operator):
                                 
             # Delete the IK bones and pole targets
             for bone_name in ["L-Foot-Ik", "R-Foot-Ik", "L-Knee-Pole", "R-Knee-Pole"]:
+                bone = obj.data.edit_bones.get(bone_name)
+                if bone:
+                    obj.data.edit_bones.remove(bone)
+
+            # Delete proxy bones
+            for bone_name in ["MDL-jnt-L-LEG-shin_proxy", "MDL-jnt-R-leg-shin_proxy", "MDL-jnt-L-thighbone_proxy", "MDL-jnt-R-thighbone_proxy"]:
                 bone = obj.data.edit_bones.get(bone_name)
                 if bone:
                     obj.data.edit_bones.remove(bone)
