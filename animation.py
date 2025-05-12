@@ -81,6 +81,13 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                     proxy_distal.parent = proxy_proximal
                     proxy_distal.use_connect = True
 
+                # Automatically find the parent of the proximal bone, parent the proximal proxy to it
+                if original_proximal and original_proximal.parent:
+                    parent_bone = obj.data.edit_bones.get(original_proximal.parent.name)
+                    if parent_bone:
+                        proxy_proximal.parent = parent_bone
+                        proxy_proximal.use_connect = False
+
                 # Automatically find the first child of the distal bone to use as the effector
                 if original_distal and original_distal.children:
                     eff_bone = original_distal.children[0]  # First child of shinbone
