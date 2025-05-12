@@ -76,12 +76,14 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                             proxy_bone.tail = child_bone.head
                             print(f"Moved tail of {bone.name} to head of {child_bone.name}.")
 
-
+                # Parent proxy distal to proxy proximal
+                if proxy_proximal and proxy_distal:
+                    proxy_distal.parent = proxy_proximal
+                    proxy_distal.use_connect = True
 
                 # Automatically find the first child of the distal bone to use as the effector
-                distal_bone = obj.data.edit_bones.get(distal_name)
-                if distal_bone and distal_bone.children:
-                    eff_bone = distal_bone.children[0]  # First child of shinbone
+                if original_distal and original_distal.children:
+                    eff_bone = original_distal.children[0]  # First child of shinbone
 
                     # Create the IK bone
                     if limb == 'Leg':
@@ -101,9 +103,8 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                         ik_bone.use_connect = False
 
                 # Create the pole vector
-                proximal_bone = obj.data.edit_bones.get(proximal_name)
-                if proximal_bone and distal_bone:
-                    pole_pos = (proximal_bone.head + distal_bone.tail) / 2
+                if proxy_proximal and proxy_distal:
+                    pole_pos = (proxy_proximal.head + proxy_distal.tail) / 2
                     pole_offset = Vector((0.0, -0.5, 0.0))
                     pole_position = pole_pos + pole_offset
 
@@ -140,8 +141,19 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
 
             # Add IK constraints
             def add_constraints(limb, proximal_name, distal_name, terminal_eff_name, side_prefix):
+                # Constraint proxy bones to the original bones
+                for original_name in [proximal_name, distal_name]:
+                    original_pbone = obj.pose.bones.get(original_name)
+                    proxy_name = f"{original_name}_proxy"
+                    proxy_pbone = obj.pose.bones.get(proxy_name)
+
+                    # 
+
+
+
+
                 # Check if IK constraint already exists
-                pbone_distal = obj.pose.bones.get(distal_name)
+                pbone_distal = obj.pose.bones.get(f'{distal_name}_proxy')
                 if pbone_distal:
                     if not any(constraint.type == 'IK' for constraint in pbone_distal.constraints):
                         # Add IK constraint to the shin bone
@@ -193,10 +205,10 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             add_constraints('Leg', 'MDL-jnt-R-thighbone', 'MDL-jnt-R-leg-shin', 'MDL-eff23', 'R')
 
             # Add constraints for the left arm
-            add_constraints('Arm', 'MDL-jnt-L-bicepBONE', 'MDL-jnt-L-FOREARM', 'MDL-eff45', 'L')
+            # add_constraints('Arm', 'MDL-jnt-L-bicepBONE', 'MDL-jnt-L-FOREARM', 'MDL-eff45', 'L')
 
-            # Add constraints for the right arm
-            add_constraints('Arm', 'MDL-jnt-R-bicepBONE', 'MDL-jnt49_2-RFarm', 'MDL-eff50', 'R')
+            # # Add constraints for the right arm
+            # add_constraints('Arm', 'MDL-jnt-R-bicepBONE', 'MDL-jnt49_2-RFarm', 'MDL-eff50', 'R')
 
             #####################################################
             # BONE SHAPE IMPORT
