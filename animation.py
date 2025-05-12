@@ -131,10 +131,10 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
 
             # # Setup IK for the left leg
 
-            # setup_ik('Leg', 'MDL-jnt-L-thighbone', 'MDL-jnt-L-LEG-shin', 'L')
+            setup_ik('Leg', 'MDL-jnt-L-thighbone', 'MDL-jnt-L-LEG-shin', 'L')
 
             # # Setup IK for the right leg
-            # setup_ik('Leg', 'MDL-jnt-R-thighbone', 'MDL-jnt-R-leg-shin', 'R')
+            setup_ik('Leg', 'MDL-jnt-R-thighbone', 'MDL-jnt-R-leg-shin', 'R')
 
             # # Setup IK for the left arm
             # setup_ik('Arm', 'MDL-jnt-L-bicepBONE', 'MDL-jnt-L-FOREARM', 'L')
