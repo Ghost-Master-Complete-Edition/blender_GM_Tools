@@ -1,5 +1,7 @@
 import bpy
+import math
 from mathutils import Vector
+from mathutils import Matrix
 import os
 
 # GHOST MASTER AUTORIG KINDA
@@ -81,6 +83,10 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                     proxy_distal.parent = proxy_proximal
                     proxy_distal.use_connect = True
 
+                # Move tail of proximal proxy slightly on the y axis if limb is arm
+                if limb == 'Arm':
+                    proxy_proximal.tail.y += 0.01
+
                 # Automatically find the parent of the proximal bone, parent the proximal proxy to it
                 if original_proximal and original_proximal.parent:
                     parent_bone = obj.data.edit_bones.get(original_proximal.parent.name)
@@ -122,8 +128,8 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                     
                     elif limb == 'Arm':
                         pole_bone = obj.data.edit_bones.new(f'{side_prefix}-Elbow-Pole')
-                        pole_bone.head = pole_position
-                        pole_bone.tail = pole_position + Vector((0.0, -0.2, 0.0))
+                        pole_bone.head = pole_position + Vector((0.0, 1.5, 0.0))
+                        pole_bone.tail = pole_position + Vector((0.0, 1.7, 0.0))
                     
                     pole_bone.use_deform = False
                     if parent_bone:
@@ -137,10 +143,10 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             setup_ik('Leg', 'MDL-jnt-R-thighbone', 'MDL-jnt-R-leg-shin', 'R')
 
             # # Setup IK for the left arm
-            # setup_ik('Arm', 'MDL-jnt-L-bicepBONE', 'MDL-jnt-L-FOREARM', 'L')
+            setup_ik('Arm', 'MDL-jnt-L-bicepBONE', 'MDL-jnt-L-FOREARM', 'L')
 
             # # Setup IK for the right arm
-            # setup_ik('Arm', 'MDL-jnt-R-bicepBONE', 'MDL-jnt49_2-RFarm', 'R')
+            setup_ik('Arm', 'MDL-jnt-R-bicepBONE', 'MDL-jnt49_2-RFarm', 'R')
 
 
             # Switch back to Object Mode
@@ -230,10 +236,10 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             add_constraints('Leg', 'MDL-jnt-R-thighbone', 'MDL-jnt-R-leg-shin', 'MDL-eff23', 'R')
 
             # Add constraints for the left arm
-            # add_constraints('Arm', 'MDL-jnt-L-bicepBONE', 'MDL-jnt-L-FOREARM', 'MDL-eff45', 'L')
+            add_constraints('Arm', 'MDL-jnt-L-bicepBONE', 'MDL-jnt-L-FOREARM', 'MDL-eff45', 'L')
 
             # # Add constraints for the right arm
-            # add_constraints('Arm', 'MDL-jnt-R-bicepBONE', 'MDL-jnt49_2-RFarm', 'MDL-eff50', 'R')
+            add_constraints('Arm', 'MDL-jnt-R-bicepBONE', 'MDL-jnt49_2-RFarm', 'MDL-eff50', 'R')
 
             #####################################################
             # BONE SHAPE IMPORT
