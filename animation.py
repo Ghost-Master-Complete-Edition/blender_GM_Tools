@@ -209,21 +209,25 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                 else:
                     self.report({'WARNING'}, f"{limb} bone {distal_name} not found.")
 
-                # Add Copy Rotation constraint to the terminal effector bone (Foot or Hand)
+                # Add Child Of constraint to the terminal effector bone (Foot or Hand)
                 pbon_terminal = obj.pose.bones.get(terminal_eff_name)
                 if pbon_terminal:
-                    # Check if Copy Rotation constraint already exists
-                    if not any(constraint.type == 'COPY_ROTATION' for constraint in pbon_terminal.constraints):
-                        # Add Copy Rotation constraint to the foot effector bone
-                        copy_rot_constraint = pbon_terminal.constraints.new('COPY_ROTATION')
-                        copy_rot_constraint.target = obj
+                    # Check if Child Of constraint already exists
+                    if not any(constraint.type == 'CHILD_OF' for constraint in pbon_terminal.constraints):
+                        childof_constraint = pbon_terminal.constraints.new('CHILD_OF')
+                        childof_constraint.target = obj
                         if limb == 'Leg':
-                            copy_rot_constraint.subtarget = f'{side_prefix}-Foot-Ik'
+                            childof_constraint.subtarget = f'{side_prefix}-Foot-Ik'
                         elif limb == 'Arm':
-                            copy_rot_constraint.subtarget = f'{side_prefix}-Hand-Ik'
+                            childof_constraint.subtarget = f'{side_prefix}-Hand-Ik'
+        
+                        # Disable location influence
+                        childof_constraint.use_location_x = False
+                        childof_constraint.use_location_y = False
+                        childof_constraint.use_location_z = False
 
-                        # Mute the Copy Rotation constraint by default
-                        copy_rot_constraint.mute = True
+                        # Mute the  constraint by default
+                        childof_constraint.mute = True
                     else:
                         self.report({'WARNING'}, f"Copy Rotation constraint already exists on {pbon_terminal.name}.")
                 else:
@@ -451,7 +455,7 @@ class OBJECT_OT_DeleteRigSetup(bpy.types.Operator):
                             pbone.constraints.remove(constraint)
 
 
-            # Delete the copy rotation constraint from the first child of shin bones
+            # Delete the c constraint from the first child of shin bones
             for bone_name in ["MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin"]:
                 bone = obj.data.edit_bones.get(bone_name)
                 if bone:
@@ -461,9 +465,9 @@ class OBJECT_OT_DeleteRigSetup(bpy.types.Operator):
                         if bone.children:
                             eff_bone = pbone.id_data.pose.bones.get(bone.children[0].name)  # Get the pose bone of the first child
                             if eff_bone:
-                                # Iterate through the constraints of the first child and remove any Copy Rotation constraint
+                                # Iterate through the constraints of the first child and remove any Child Of constraint
                                 for constraint in eff_bone.constraints:
-                                    if constraint.type == 'COPY_ROTATION':
+                                    if constraint.type == 'CHILD_OF':
                                         eff_bone.constraints.remove(constraint)
             
                                 
