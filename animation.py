@@ -287,7 +287,7 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             #####################################################
 
             # Define the bones assigned to collections as lists
-            bones_FK=["MDL-lfoot", "MDL-rfoot", "MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin", "MDL-jnt-L-thighbone", "MDL-jnt-R-thighbone"]
+            bones_FK=["MDL-lfoot", "MDL-rfoot", "MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin", "MDL-jnt-L-thighbone", "MDL-jnt-R-thighbone","MDL-J-L-PalmBone1","MDL-jnt-L-wrist_rotX","MDL-jnt-L-FOREARM","MDL-jnt-L-bicepBONE","MDL-J_R-HandBone","MDL-jnt-R-wrist_rotX","MDL-jnt49_2-RFarm","MDL-jnt-R-bicepBONE"]
             bones_IK=["L-Foot-Ik", "R-Foot-Ik", "L-Knee-Pole", "R-Knee-Pole","L-Hand-Ik", "R-Hand-Ik","L-Elbow-Pole","R-Elbow-Pole"]
 
             # Check if bone collections are already created, if not, create them
