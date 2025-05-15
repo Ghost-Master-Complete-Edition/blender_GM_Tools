@@ -128,8 +128,8 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                     
                     elif limb == 'Arm':
                         pole_bone = obj.data.edit_bones.new(f'{side_prefix}-Elbow-Pole')
-                        pole_bone.head = pole_position + Vector((0.0, 1.5, 0.0))
-                        pole_bone.tail = pole_position + Vector((0.0, 1.7, 0.0))
+                        pole_bone.head = pole_position + Vector((0.0, 0.8, 0.0))
+                        pole_bone.tail = pole_position + Vector((0.0, 1.0, 0.0))
                     
                     pole_bone.use_deform = False
                     if parent_bone:
