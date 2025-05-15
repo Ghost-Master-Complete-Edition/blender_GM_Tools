@@ -288,7 +288,7 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
 
             # Define the bones assigned to collections as lists
             bones_FK=["MDL-lfoot", "MDL-rfoot", "MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin", "MDL-jnt-L-thighbone", "MDL-jnt-R-thighbone"]
-            bones_IK=["L-Foot-Ik", "R-Foot-Ik", "L-Knee-Pole", "R-Knee-Pole","L-Hand-Ik", "R-Hand-Ik","L-Elbow-Pole","R-Elbow-Pole"]
+            bones_IK=["L-Foot-Ik", "R-Foot-Ik", "L-Knee-Pole", "R-Knee-Pole"]
 
             # Check if bone collections are already created, if not, create them
             
@@ -445,8 +445,8 @@ class OBJECT_OT_DeleteRigSetup(bpy.types.Operator):
             # Switch to Edit Mode to modify bones
             bpy.ops.object.mode_set(mode='EDIT')
 
-            # Delete the constraints from the proximals and distals
-            for bone_name in ["MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin", "MDL-jnt-L-thighbone", "MDL-jnt-R-thighbone",'MDL-jnt-L-bicepBONE','MDL-jnt-L-FOREARM','MDL-jnt-R-bicepBONE','MDL-jnt49_2-RFarm']:
+            # Delete the constraints from the shin and thighbones
+            for bone_name in ["MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin", "MDL-jnt-L-thighbone", "MDL-jnt-R-thighbone"]:
                 bone = obj.data.edit_bones.get(bone_name)
                 if bone:
                     pbone = obj.pose.bones.get(bone_name)
@@ -455,8 +455,8 @@ class OBJECT_OT_DeleteRigSetup(bpy.types.Operator):
                             pbone.constraints.remove(constraint)
 
 
-            # Delete the c constraint from the effectors from their parents
-            for bone_name in ["MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin","MDL-jnt-R-wrist_rotX","MDL-jnt-L-wrist_rotX"]:
+            # Delete the c constraint from the first child of shin bones
+            for bone_name in ["MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin"]:
                 bone = obj.data.edit_bones.get(bone_name)
                 if bone:
                     pbone = obj.pose.bones.get(bone_name)
@@ -472,13 +472,13 @@ class OBJECT_OT_DeleteRigSetup(bpy.types.Operator):
             
                                 
             # Delete the IK bones and pole targets
-            for bone_name in ["L-Foot-Ik", "R-Foot-Ik", "L-Knee-Pole", "R-Knee-Pole","L-Hand-Ik", "R-Hand-Ik","L-Elbow-Pole","R-Elbow-Pole"]:
+            for bone_name in ["L-Foot-Ik", "R-Foot-Ik", "L-Knee-Pole", "R-Knee-Pole"]:
                 bone = obj.data.edit_bones.get(bone_name)
                 if bone:
                     obj.data.edit_bones.remove(bone)
 
             # Delete proxy bones
-            for bone_name in ["MDL-jnt-L-LEG-shin_proxy", "MDL-jnt-R-leg-shin_proxy", "MDL-jnt-L-thighbone_proxy", "MDL-jnt-R-thighbone_proxy",'MDL-jnt-L-bicepBONE_proxy','MDL-jnt-L-FOREARM_proxy','MDL-jnt-R-bicepBONE_proxy','MDL-jnt49_2-RFarm_proxy']:
+            for bone_name in ["MDL-jnt-L-LEG-shin_proxy", "MDL-jnt-R-leg-shin_proxy", "MDL-jnt-L-thighbone_proxy", "MDL-jnt-R-thighbone_proxy"]:
                 bone = obj.data.edit_bones.get(bone_name)
                 if bone:
                     obj.data.edit_bones.remove(bone)
