@@ -96,13 +96,14 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
 
                 # Automatically find the first child of the distal bone to use as the effector
                 if original_distal and original_distal.children:
-                    eff_bone = original_distal.children[0]  # First child of shinbone
 
                     # Create the IK bone
                     if limb == 'Leg':
+                        eff_bone = original_distal.children[0]  # First child of shinbone
                         ik_bone = obj.data.edit_bones.new(f'{side_prefix}-Foot-Ik')
 
                     elif limb == 'Arm':
+                        eff_bone = original_distal.children[0].children[0].children[0].children[0]  # 4th child of forearm
                         ik_bone = obj.data.edit_bones.new(f'{side_prefix}-Hand-Ik')
                    
                     ik_bone.head = eff_bone.head
@@ -161,28 +162,16 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                 original_proximal = obj.pose.bones.get(proximal_name)
                 original_distal = obj.pose.bones.get(distal_name)
 
-                # Proximal bone constraints
-                if original_proximal and proxy_proximal:
-                    if not any(c.type == 'CHILD_OF' and c.subtarget == proxy_proximal.name for c in original_proximal.constraints):
-                        childof_constraint = original_proximal.constraints.new('CHILD_OF')
-                        childof_constraint.name = "ChildOf_Proxy"
-                        childof_constraint.target = obj
-                        childof_constraint.subtarget = proxy_proximal.name
-                        childof_constraint.use_location_x = False
-                        childof_constraint.use_location_y = False
-                        childof_constraint.use_location_z = False
-                        childof_constraint.mute = True
-
-                # Distal bone constraints
-                if original_distal and proxy_distal:
-                    if not any(c.type == 'COPY_ROTATION' and c.subtarget == proxy_distal.name for c in original_distal.constraints):
-                        copyrot_constraint = original_distal.constraints.new('COPY_ROTATION')
-                        copyrot_constraint.name = "CopyRot_Proxy"
-                        copyrot_constraint.target = obj
-                        copyrot_constraint.subtarget = proxy_distal.name
-                        copyrot_constraint.target_space = 'LOCAL_OWNER_ORIENT'
-                        copyrot_constraint.owner_space = 'LOCAL'
-                        childof_constraint.mute = True
+                for original, proxy in [(original_proximal, proxy_proximal), (original_distal, proxy_distal)]:
+                    if original and proxy:
+                        if not any(c.type == 'COPY_ROTATION' and c.subtarget == proxy.name for c in original.constraints):
+                            copyrot_constraint = original.constraints.new('COPY_ROTATION')
+                            copyrot_constraint.name = "CopyRot_Proxy"
+                            copyrot_constraint.target = obj
+                            copyrot_constraint.target_space = 'LOCAL_OWNER_ORIENT'
+                            copyrot_constraint.owner_space = 'LOCAL'
+                            copyrot_constraint.subtarget = proxy.name
+                            copyrot_constraint.mute = True
 
                 # Normal IK contraints
                 if proxy_distal:
@@ -213,21 +202,16 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                 pbon_terminal = obj.pose.bones.get(terminal_eff_name)
                 if pbon_terminal:
                     # Check if Child Of constraint already exists
-                    if not any(constraint.type == 'CHILD_OF' for constraint in pbon_terminal.constraints):
-                        childof_constraint = pbon_terminal.constraints.new('CHILD_OF')
-                        childof_constraint.target = obj
-                        if limb == 'Leg':
-                            childof_constraint.subtarget = f'{side_prefix}-Foot-Ik'
-                        elif limb == 'Arm':
-                            childof_constraint.subtarget = f'{side_prefix}-Hand-Ik'
-        
-                        # Disable location influence
-                        childof_constraint.use_location_x = False
-                        childof_constraint.use_location_y = False
-                        childof_constraint.use_location_z = False
+                    if not any(constraint.type == 'COPY_ROTATION' for constraint in pbon_terminal.constraints):
+                        copyrot_constraint = pbon_terminal.constraints.new('COPY_ROTATION')
+                        copyrot_constraint.target = obj
 
+                        if limb == 'Leg':
+                            copyrot_constraint.subtarget = f'{side_prefix}-Foot-Ik'
+                        elif limb == 'Arm':
+                            copyrot_constraint.subtarget = f'{side_prefix}-Hand-Ik'      
                         # Mute the  constraint by default
-                        childof_constraint.mute = True
+                        copyrot_constraint.mute = True
                     else:
                         self.report({'WARNING'}, f"Copy Rotation constraint already exists on {pbon_terminal.name}.")
                 else:
@@ -418,7 +402,7 @@ class OBJECT_OT_SwitchLegsFKIK(bpy.types.Operator):
             # Mute IK constraints
             for pbone in obj.pose.bones:
                 for constraint in pbone.constraints:
-                    if constraint.type == 'IK' or constraint.type == 'COPY_ROTATION' or constraint.type == 'CHILD_OF':
+                    if constraint.type == 'IK' or constraint.type == 'COPY_ROTATION':
                         constraint.mute = True
 
      
@@ -467,7 +451,7 @@ class OBJECT_OT_DeleteRigSetup(bpy.types.Operator):
                             if eff_bone:
                                 # Iterate through the constraints of the first child and remove any Child Of constraint
                                 for constraint in eff_bone.constraints:
-                                    if constraint.type == 'CHILD_OF':
+                                    if constraint.type == 'COPY_ROTATION':
                                         eff_bone.constraints.remove(constraint)
             
                                 
