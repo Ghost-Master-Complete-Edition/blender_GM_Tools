@@ -349,19 +349,23 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                             if bone_name == bones_IK[a]:
                                 bcoll_Main.unassign(bone)
                                 bcoll_IK.assign(bone)
-                        # Assign bone as Proxy collection if it's in the Proxy list
-                        for a in range (len(bones_PROXY)):
-                            if bone_name == bones_PROXY[a]:
-                                bcoll_Main.unassign(bone)
-                                bcoll_Proxy.assign(bone)
-
-
-                                          
                     else:
-                        print(f"No bone named {bone_name} found in the armature.")
+                            print(f"No bone named {bone_name} found in the armature.")
 
-            # Hide IK and Extra collections
+            # Assign bone as Proxy collection if it's in the Proxy list
+            for bone_name in bones_PROXY:
+                if bone_name in armature.data.bones:
+                    bone = armature.pose.bones[bone_name]
+                    bcoll_Extra.unassign(bone)
+                    bcoll_Proxy.assign(bone)
+                else:
+                    print(f"Proxy bone '{bone_name}' not found in the armature.")
+
+                    
+
+            # Hide IK Proxy and Extra collections
             bcoll_IK.is_visible = False
+            bcoll_Proxy.is_visible = False
             bcoll_Extra.is_visible = False
 
         else:
