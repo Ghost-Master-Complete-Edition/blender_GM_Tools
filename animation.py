@@ -273,6 +273,7 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             # Define the bones assigned to collections as lists
             bones_FK=["MDL-lfoot", "MDL-rfoot", "MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin", "MDL-jnt-L-thighbone", "MDL-jnt-R-thighbone","MDL-J-L-PalmBone1","MDL-jnt-L-wrist_rotX","MDL-jnt-L-FOREARM","MDL-jnt-L-bicepBONE","MDL-J_R-HandBone","MDL-jnt-R-wrist_rotX","MDL-jnt49_2-RFarm","MDL-jnt-R-bicepBONE"]
             bones_IK=["L-Foot-Ik", "R-Foot-Ik", "L-Knee-Pole", "R-Knee-Pole","L-Hand-Ik", "R-Hand-Ik","L-Elbow-Pole","R-Elbow-Pole"]
+            bones_PROXY=["MDL-jnt-L-LEG-shin_proxy", "MDL-jnt-R-leg-shin_proxy", "MDL-jnt-L-thighbone_proxy", "MDL-jnt-R-thighbone_proxy","MDL-jnt-L-bicepBONE_proxy","MDL-jnt-L-FOREARM_proxy","MDL-jnt-R-bicepBONE_proxy","MDL-jnt49_2-RFarm_proxy"]
 
             # Check if bone collections are already created, if not, create them
             
@@ -299,6 +300,12 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                 bcoll_IK = armature.data.collections.new("IK", parent=bcoll_Gm_Rig)
             else:
                 self.report({'WARNING'}, "IK collection already exists.")
+
+            bcoll_Proxy = armature.data.collections_all.get("Proxy")
+            if bcoll_Proxy is None:
+                bcoll_Proxy = armature.data.collections.new("Proxy", parent=bcoll_Gm_Rig)
+            else:
+                self.report({'WARNING'}, "Proxy collection already exists.")
 
             bcoll_Extra = armature.data.collections_all.get("Extra")
             if bcoll_Extra is None:
@@ -342,6 +349,12 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                             if bone_name == bones_IK[a]:
                                 bcoll_Main.unassign(bone)
                                 bcoll_IK.assign(bone)
+                        # Assign bone as Proxy collection if it's in the Proxy list
+                        for a in range (len(bones_PROXY)):
+                            if bone_name == bones_PROXY[a]:
+                                bcoll_Main.unassign(bone)
+                                bcoll_Proxy.assign(bone)
+
 
                                           
                     else:
@@ -366,46 +379,47 @@ class OBJECT_OT_SwitchLegsFKIK(bpy.types.Operator):
    
     
     def execute(self, context):
-        
+            
         obj = bpy.context.object
-
-		# Check if FK is not hidden
+        
+        # Check if FK is not hidden
         if obj.data.collections_all["FK"].is_visible == True:
-                
+
             ##############
             # Switch to IK
             ##############
-       
+
             # Hide FK
             obj.data.collections_all["FK"].is_visible = False
 
             # Unhide IK
             obj.data.collections_all["IK"].is_visible = True
-                    
-            # Unmute all constraints
+
+            # Unmute constraints only on bones in the FK or IK collections
             for pbone in obj.pose.bones:
-                for constraint in pbone.constraints:
-                    constraint.mute = False
-        
-                    
+                if any(c.name in {"IK", "FK", "Proxy"} for c in pbone.bone.collections):
+                    print(f"found FK or IK collection for {pbone.name}")
+                    for constraint in pbone.constraints:
+                        print(f"found constraint {constraint.name} for {pbone.name}")
+                        constraint.mute = False
+
         else:
             ##############
-			# Switch to FK
-			##############
-					
+            # Switch to FK
+            ##############
+
             # Hide IK
             obj.data.collections_all["IK"].is_visible = False
 
             # Unhide FK
             obj.data.collections_all["FK"].is_visible = True
-					
-            # Mute IK constraints
-            for pbone in obj.pose.bones:
-                for constraint in pbone.constraints:
-                    if constraint.type == 'IK' or constraint.type == 'COPY_ROTATION':
-                        constraint.mute = True
 
-     
+            # Mute constraints only on bones in the FK or IK collections
+            for pbone in obj.pose.bones:
+                if any(c.name in {"IK", "FK", "Proxy"} for c in pbone.bone.collections):
+                    for constraint in pbone.constraints:
+                            constraint.mute = True
+
 
         return {'FINISHED'}
 
