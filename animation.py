@@ -275,43 +275,43 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             bones_IK=["L-Foot-Ik", "R-Foot-Ik", "L-Knee-Pole", "R-Knee-Pole","L-Hand-Ik", "R-Hand-Ik","L-Elbow-Pole","R-Elbow-Pole"]
             bones_PROXY=["MDL-jnt-L-LEG-shin_proxy", "MDL-jnt-R-leg-shin_proxy", "MDL-jnt-L-thighbone_proxy", "MDL-jnt-R-thighbone_proxy","MDL-jnt-L-bicepBONE_proxy","MDL-jnt-L-FOREARM_proxy","MDL-jnt-R-bicepBONE_proxy","MDL-jnt49_2-RFarm_proxy"]
 
+            # Get and add eff bones from parents
+            bones_effBones=[]
+            ParentList=["MDL-jnt-L-wrist_rotX","MDL-jnt-R-wrist_rotX","MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin"]
+            for bone_name in ParentList:
+                    if bone_name in armature.data.bones:
+                        bone = armature.pose.bones[bone_name]
+                        child = bone.children[0]
+                        if child:
+                            bones_effBones.append(child.name)
+                            print(f"Added {child.name} to EffBones list.")
+
+
+
             # Check if bone collections are already created, if not, create them
-            
-            bcoll_Gm_Rig = armature.data.collections_all.get("GM Rig")
-            if bcoll_Gm_Rig is None:
-                bcoll_Gm_Rig = armature.data.collections.new("GM Rig")
-            else:
-                self.report({'WARNING'}, "GM Rig collection already exists.")
 
-            bcoll_Main = armature.data.collections_all.get("Main")
-            if bcoll_Main is None:
-                bcoll_Main = armature.data.collections.new("Main", parent=bcoll_Gm_Rig)
-            else:
-                self.report({'WARNING'}, "Main collection already exists.")
+            #add collection function
+            def add_collection (name, parent = None):
+                obj = bpy.context.object
+                result = obj.data.collections_all.get(name)
+                if result is None:
+                    if parent is None:
+                        result = obj.data.collections.new(name)
+                    else:
+                        result = obj.data.collections.new(name, parent=parent)
+                else:
+                    print(f"Warning: {name} collection already exists.")
+                return result
+                
+            # Add the collections
+            bcoll_Gm_Rig   = add_collection("GM Rig")
+            bcoll_Main     = add_collection("Main", parent=bcoll_Gm_Rig)
+            bcoll_FK       = add_collection("FK", parent=bcoll_Gm_Rig)
+            bcoll_IK       = add_collection("IK", parent=bcoll_Gm_Rig)
+            bcoll_Proxy    = add_collection("Proxy", parent=bcoll_Gm_Rig)
+            bcoll_Extra    = add_collection("Extra", parent=bcoll_Gm_Rig)
+            bcoll_EffBones = add_collection("EffBones", parent=bcoll_Gm_Rig)
 
-            bcoll_FK = armature.data.collections_all.get("FK")
-            if bcoll_FK is None:
-                bcoll_FK = armature.data.collections.new("FK", parent=bcoll_Gm_Rig)
-            else:
-                self.report({'WARNING'}, "FK collection already exists.")
-
-            bcoll_IK = armature.data.collections_all.get("IK")
-            if bcoll_IK is None:
-                bcoll_IK = armature.data.collections.new("IK", parent=bcoll_Gm_Rig)
-            else:
-                self.report({'WARNING'}, "IK collection already exists.")
-
-            bcoll_Proxy = armature.data.collections_all.get("Proxy")
-            if bcoll_Proxy is None:
-                bcoll_Proxy = armature.data.collections.new("Proxy", parent=bcoll_Gm_Rig)
-            else:
-                self.report({'WARNING'}, "Proxy collection already exists.")
-
-            bcoll_Extra = armature.data.collections_all.get("Extra")
-            if bcoll_Extra is None:
-                bcoll_Extra = armature.data.collections.new("Extra", parent=bcoll_Gm_Rig)
-            else:
-                self.report({'WARNING'}, "Extra collection already exists.")
 
             # Start by assigning every bone in armature to the Extra collection
             for bone in armature.data.bones:
@@ -330,7 +330,7 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                         
                         # Assign the object as the custom shape for the bone
                         bone.custom_shape = obj
-                        print(f"Assigned {obj.name} to {bone_name}")
+                        # print(f"Assigned {obj.name} to {bone_name}")
                         
                         # Assign bone as Main collection
                         bcoll_Main.assign(bone)
@@ -361,12 +361,22 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                 else:
                     print(f"Proxy bone '{bone_name}' not found in the armature.")
 
+            # Assign bone as EffBones collection if it's in the EffBones list
+            for bone_name in bones_effBones:
+                if bone_name in armature.data.bones:
+                    bone = armature.pose.bones[bone_name]
+                    bcoll_Extra.unassign(bone)
+                    bcoll_EffBones.assign(bone)
+                else:
+                    print(f"Effector bone '{bone_name}' not found in the armature.")
+
                     
 
-            # Hide IK Proxy and Extra collections
+            # Hide collections
             bcoll_IK.is_visible = False
             bcoll_Proxy.is_visible = False
             bcoll_Extra.is_visible = False
+            bcoll_EffBones.is_visible = False
 
         else:
             self.report({'ERROR'}, "Select an armature object")
@@ -401,10 +411,10 @@ class OBJECT_OT_SwitchLegsFKIK(bpy.types.Operator):
 
             # Unmute constraints only on bones in the FK or IK collections
             for pbone in obj.pose.bones:
-                if any(c.name in {"IK", "FK", "Proxy"} for c in pbone.bone.collections):
-                    print(f"found FK or IK collection for {pbone.name}")
+                if any(c.name in {"IK", "FK", "Proxy", "EffBones"} for c in pbone.bone.collections):
+                    # print(f"found FK or IK collection for {pbone.name}")
                     for constraint in pbone.constraints:
-                        print(f"found constraint {constraint.name} for {pbone.name}")
+                        # print(f"found constraint {constraint.name} for {pbone.name}")
                         constraint.mute = False
 
         else:
@@ -420,7 +430,7 @@ class OBJECT_OT_SwitchLegsFKIK(bpy.types.Operator):
 
             # Mute constraints only on bones in the FK or IK collections
             for pbone in obj.pose.bones:
-                if any(c.name in {"IK", "FK", "Proxy"} for c in pbone.bone.collections):
+                if any(c.name in {"IK", "FK", "Proxy", "EffBones"} for c in pbone.bone.collections):
                     for constraint in pbone.constraints:
                             constraint.mute = True
 
