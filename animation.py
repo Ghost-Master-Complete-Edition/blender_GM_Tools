@@ -519,58 +519,67 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
 
 
 
+# Switcher Base Class :)
+class OBJECT_OT_SwitchFKIKBase(bpy.types.Operator):
+    """Base class to switch FK/IK visibility and constraint state"""
+    bl_options = {'REGISTER', 'UNDO'}
 
-class OBJECT_OT_SwitchLegsFKIK(bpy.types.Operator):
-    """Switch between FK and IK for the legs"""
-    bl_idname = "object.switch_legs_fk_ik"
-    bl_label = "Switch Legs FK/IK"
-   
-    
+    suffix: str = ""
+
     def execute(self, context):
-            
         obj = bpy.context.object
-        
-        # Check if FK is not hidden
-        if obj.data.collections_all["FK_Leg_L"].is_visible == True:
+        fk_coll = f"FK_{self.suffix}"
+        ik_coll = f"IK_{self.suffix}"
+        proxy_coll = f"Proxy_{self.suffix}"
+        effbones_coll = f"EffBones_{self.suffix}"
 
-            ##############
+        coll_all = obj.data.collections_all
+
+        is_fk_active = coll_all.get(fk_coll, None) and coll_all[fk_coll].is_visible
+
+        if is_fk_active:
             # Switch to IK
-            ##############
+            coll_all[fk_coll].is_visible = False
+            coll_all[ik_coll].is_visible = True
 
-            # Hide FK
-            obj.data.collections_all["FK_Leg_L"].is_visible = False
-
-            # Unhide IK
-            obj.data.collections_all["IK_Leg_L"].is_visible = True
-
-            # Unmute constraints only on bones in the FK or IK collections
             for pbone in obj.pose.bones:
-                if any(c.name in {"IK_Leg_L", "FK_Leg_L", "Proxy_Leg_L", "EffBones_Leg_L"} for c in pbone.bone.collections):
-                    # print(f"found FK or IK collection for {pbone.name}")
+                if any(c.name in {fk_coll, ik_coll, proxy_coll, effbones_coll} for c in pbone.bone.collections):
                     for constraint in pbone.constraints:
-                        # print(f"found constraint {constraint.name} for {pbone.name}")
                         constraint.mute = False
 
         else:
-            ##############
             # Switch to FK
-            ##############
+            coll_all[ik_coll].is_visible = False
+            coll_all[fk_coll].is_visible = True
 
-            # Hide IK
-            obj.data.collections_all["IK_Leg_L"].is_visible = False
-
-            # Unhide FK
-            obj.data.collections_all["FK_Leg_L"].is_visible = True
-
-            # Mute constraints only on bones in the FK or IK collections
             for pbone in obj.pose.bones:
-                if any(c.name in {"IK_Leg_L", "FK_Leg_L", "Proxy_Leg_L", "EffBones_Leg_L"} for c in pbone.bone.collections):
+                if any(c.name in {fk_coll, ik_coll, proxy_coll, effbones_coll} for c in pbone.bone.collections):
                     for constraint in pbone.constraints:
-                            constraint.mute = True
-
+                        constraint.mute = True
 
         return {'FINISHED'}
 
+# inherited switcher classes
+
+class OBJECT_OT_SwitchLeg_L_FKIK(OBJECT_OT_SwitchFKIKBase):
+    bl_idname = "object.switch_fkik_leg_l"
+    bl_label = "Leg L"
+    suffix = "Leg_L"
+
+class OBJECT_OT_SwitchLeg_R_FKIK(OBJECT_OT_SwitchFKIKBase):
+    bl_idname = "object.switch_fkik_leg_r"
+    bl_label = "Leg R"
+    suffix = "Leg_R"
+
+class OBJECT_OT_SwitchArm_L_FKIK(OBJECT_OT_SwitchFKIKBase):
+    bl_idname = "object.switch_fkik_arm_l"
+    bl_label = "Arm L"
+    suffix = "Arm_L"
+
+class OBJECT_OT_SwitchArm_R_FKIK(OBJECT_OT_SwitchFKIKBase):
+    bl_idname = "object.switch_fkik_arm_r"
+    bl_label = "Arm R"
+    suffix = "Arm_R"
 
 
 class OBJECT_OT_DeleteRigSetup(bpy.types.Operator):
@@ -718,12 +727,20 @@ class OBJECT_OT_SanityCheck(bpy.types.Operator):
 
 def register():
     bpy.utils.register_class(OBJECT_OT_GhostMasterIK)
-    bpy.utils.register_class(OBJECT_OT_SwitchLegsFKIK)
     bpy.utils.register_class(OBJECT_OT_DeleteRigSetup)
     bpy.utils.register_class(OBJECT_OT_SanityCheck)
 
+    bpy.utils.register_class(OBJECT_OT_SwitchLeg_L_FKIK)
+    bpy.utils.register_class(OBJECT_OT_SwitchLeg_R_FKIK)
+    bpy.utils.register_class(OBJECT_OT_SwitchArm_L_FKIK)
+    bpy.utils.register_class(OBJECT_OT_SwitchArm_R_FKIK)
+
 def unregister():
     bpy.utils.unregister_class(OBJECT_OT_GhostMasterIK)
-    bpy.utils.unregister_class(OBJECT_OT_SwitchLegsFKIK)
     bpy.utils.unregister_class(OBJECT_OT_DeleteRigSetup)
     bpy.utils.unregister_class(OBJECT_OT_SanityCheck)
+
+    bpy.utils.unregister_class(OBJECT_OT_SwitchLeg_L_FKIK)
+    bpy.utils.unregister_class(OBJECT_OT_SwitchLeg_R_FKIK)
+    bpy.utils.unregister_class(OBJECT_OT_SwitchArm_L_FKIK)
+    bpy.utils.unregister_class(OBJECT_OT_SwitchArm_R_FKIK)
