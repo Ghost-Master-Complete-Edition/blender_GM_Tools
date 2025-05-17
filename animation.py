@@ -271,20 +271,110 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             #####################################################
 
             # Define the bones assigned to collections as lists
-            bones_FK=["MDL-lfoot", "MDL-rfoot", "MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin", "MDL-jnt-L-thighbone", "MDL-jnt-R-thighbone","MDL-J-L-PalmBone1","MDL-jnt-L-wrist_rotX","MDL-jnt-L-FOREARM","MDL-jnt-L-bicepBONE","MDL-J_R-HandBone","MDL-jnt-R-wrist_rotX","MDL-jnt49_2-RFarm","MDL-jnt-R-bicepBONE"]
-            bones_IK=["L-Foot-Ik", "R-Foot-Ik", "L-Knee-Pole", "R-Knee-Pole","L-Hand-Ik", "R-Hand-Ik","L-Elbow-Pole","R-Elbow-Pole"]
-            bones_PROXY=["MDL-jnt-L-LEG-shin_proxy", "MDL-jnt-R-leg-shin_proxy", "MDL-jnt-L-thighbone_proxy", "MDL-jnt-R-thighbone_proxy","MDL-jnt-L-bicepBONE_proxy","MDL-jnt-L-FOREARM_proxy","MDL-jnt-R-bicepBONE_proxy","MDL-jnt49_2-RFarm_proxy"]
+            # FK 
+            FK_Leg_L = [
+                "MDL-lfoot",
+                "MDL-jnt-L-LEG-shin",
+                "MDL-jnt-L-thighbone"
+            ]
 
-            # Get and add eff bones from parents
-            bones_effBones=[]
-            ParentList=["MDL-jnt-L-wrist_rotX","MDL-jnt-R-wrist_rotX","MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin"]
-            for bone_name in ParentList:
-                    if bone_name in armature.data.bones:
-                        bone = armature.pose.bones[bone_name]
+            FK_Leg_R = [
+                "MDL-rfoot",
+                "MDL-jnt-R-leg-shin",
+                "MDL-jnt-R-thighbone"
+            ]
+
+            FK_Arm_L = [
+                "MDL-J-L-PalmBone1",
+                "MDL-jnt-L-wrist_rotX",
+                "MDL-jnt-L-FOREARM",
+                "MDL-jnt-L-bicepBONE"
+            ]
+
+            FK_Arm_R = [
+                "MDL-J_R-HandBone",
+                "MDL-jnt-R-wrist_rotX",
+                "MDL-jnt49_2-RFarm",
+                "MDL-jnt-R-bicepBONE"
+            ]
+            
+            # IK
+            IK_Leg_L = [
+                "L-Foot-Ik",
+                "L-Knee-Pole"
+            ]
+
+            IK_Leg_R = [
+                "R-Foot-Ik",
+                "R-Knee-Pole"
+            ]
+
+            IK_Arm_L = [
+                "L-Hand-Ik",
+                "L-Elbow-Pole"
+            ]
+
+            IK_Arm_R = [
+                "R-Hand-Ik",
+                "R-Elbow-Pole"
+            ]
+            
+            # Proxy
+
+
+            PROXY_Leg_L = [
+                "MDL-jnt-L-LEG-shin_proxy",
+                "MDL-jnt-L-thighbone_proxy"
+            ]
+
+            PROXY_Leg_R = [
+                "MDL-jnt-R-leg-shin_proxy",
+                "MDL-jnt-R-thighbone_proxy"
+            ]
+
+            PROXY_Arm_L = [
+                "MDL-jnt-L-bicepBONE_proxy",
+                "MDL-jnt-L-FOREARM_proxy"
+            ]
+
+            PROXY_Arm_R = [
+                "MDL-jnt-R-bicepBONE_proxy",
+                "MDL-jnt49_2-RFarm_proxy"
+            ]
+
+            # effBones collections 
+
+            # Initialize variables
+            effBone_Leg_L = []
+            effBone_Leg_R = []
+            effBone_Arm_L = []
+            effBone_Arm_R = []
+
+            # Pair the parent bone with the correct variable (as references)
+            ParentList = [
+                "MDL-jnt-L-LEG-shin",
+                "MDL-jnt-R-leg-shin",
+                "MDL-jnt-L-wrist_rotX",
+                "MDL-jnt-R-wrist_rotX"
+            ]
+
+            CollectionList = [
+                effBone_Leg_L,
+                effBone_Leg_R,
+                effBone_Arm_L,
+                effBone_Arm_R
+            ]
+
+            # Add children to correct list
+            for parent_bone, collection in zip(ParentList, CollectionList):
+                if parent_bone in armature.data.bones:
+                    bone = armature.pose.bones[parent_bone]
+                    if bone.children:
                         child = bone.children[0]
-                        if child:
-                            bones_effBones.append(child.name)
-                            print(f"Added {child.name} to EffBones list.")
+                        collection.append(child.name)
+                        print(f"Added {child.name} to collection")
+                    else:
+                        print(f"No child found for {parent_bone}")
 
 
 
@@ -306,13 +396,33 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             # Add the collections
             bcoll_Gm_Rig   = add_collection("GM Rig")
             bcoll_Main     = add_collection("Main", parent=bcoll_Gm_Rig)
+            
             bcoll_FK       = add_collection("FK", parent=bcoll_Gm_Rig)
-            bcoll_IK       = add_collection("IK", parent=bcoll_Gm_Rig)
+            bcoll_FK_Leg_L = add_collection("FK_Leg_L", parent=bcoll_FK)
+            bcoll_FK_Leg_R = add_collection("FK_Leg_R", parent=bcoll_FK)
+            bcoll_FK_Arm_L = add_collection("FK_Arm_L", parent=bcoll_FK)
+            bcoll_FK_Arm_R = add_collection("FK_Arm_R", parent=bcoll_FK)
 
+            bcoll_IK       = add_collection("IK", parent=bcoll_Gm_Rig)
+            bcoll_IK_Leg_L = add_collection("IK_Leg_L", parent=bcoll_IK)
+            bcoll_IK_Leg_R = add_collection("IK_Leg_R", parent=bcoll_IK)
+            bcoll_IK_Arm_L = add_collection("IK_Arm_L", parent=bcoll_IK)
+            bcoll_IK_Arm_R = add_collection("IK_Arm_R", parent=bcoll_IK)
+            
             bcoll_Extra    = add_collection("Extra", parent=bcoll_Gm_Rig)
             bcoll_Unused   = add_collection("Unused", parent=bcoll_Extra)
+
             bcoll_Proxy    = add_collection("Proxy", parent=bcoll_Extra)
+            bcoll_Proxy_Leg_L = add_collection("Proxy_Leg_L", parent=bcoll_Proxy)
+            bcoll_Proxy_Leg_R = add_collection("Proxy_Leg_R", parent=bcoll_Proxy)
+            bcoll_Proxy_Arm_L = add_collection("Proxy_Arm_L", parent=bcoll_Proxy)
+            bcoll_Proxy_Arm_R = add_collection("Proxy_Arm_R", parent=bcoll_Proxy)
+
             bcoll_EffBones = add_collection("EffBones", parent=bcoll_Extra)
+            bcoll_EffBones_Leg_L = add_collection("EffBones_Leg_L", parent=bcoll_EffBones)
+            bcoll_EffBones_Leg_R = add_collection("EffBones_Leg_R", parent=bcoll_EffBones)
+            bcoll_EffBones_Arm_L = add_collection("EffBones_Arm_L", parent=bcoll_EffBones)
+            bcoll_EffBones_Arm_R = add_collection("EffBones_Arm_R", parent=bcoll_EffBones)
 
 
             # Start by assigning every bone in armature to the Extra collection
@@ -354,17 +464,53 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                         print(f"Bone '{bone_name}' not found in the armature.")
            
             # Assign bones to their respective collections
-            assign_bone_collection_from_list(bones_FK, "FK")
-            assign_bone_collection_from_list(bones_IK, "IK")
-            assign_bone_collection_from_list(bones_PROXY, "Proxy")
-            assign_bone_collection_from_list(bones_effBones, "EffBones")
-                    
+            # FK
+            assign_bone_collection_from_list(FK_Leg_L, "FK_Leg_L")
+            assign_bone_collection_from_list(FK_Leg_R, "FK_Leg_R")
+            assign_bone_collection_from_list(FK_Arm_L, "FK_Arm_L")
+            assign_bone_collection_from_list(FK_Arm_R, "FK_Arm_R")
 
-            # Hide collections
-            bcoll_IK.is_visible = False
-            bcoll_Proxy.is_visible = False
+            # IK
+            assign_bone_collection_from_list(IK_Leg_L, "IK_Leg_L")
+            assign_bone_collection_from_list(IK_Leg_R, "IK_Leg_R")
+            assign_bone_collection_from_list(IK_Arm_L, "IK_Arm_L")
+            assign_bone_collection_from_list(IK_Arm_R, "IK_Arm_R")
+
+            # Proxy
+            assign_bone_collection_from_list(PROXY_Leg_L, "Proxy_Leg_L")
+            assign_bone_collection_from_list(PROXY_Leg_R, "Proxy_Leg_R")
+            assign_bone_collection_from_list(PROXY_Arm_L, "Proxy_Arm_L")
+            assign_bone_collection_from_list(PROXY_Arm_R, "Proxy_Arm_R")
+
+            # EffBones
+            assign_bone_collection_from_list(effBone_Leg_L, "EffBones_Leg_L")
+            assign_bone_collection_from_list(effBone_Leg_R, "EffBones_Leg_R")
+            assign_bone_collection_from_list(effBone_Arm_L, "EffBones_Arm_L")
+            assign_bone_collection_from_list(effBone_Arm_R, "EffBones_Arm_R")
+
+
+            # Hide collections 
+
+            # IK
+            bcoll_IK_Leg_L.is_visible = False
+            bcoll_IK_Leg_R.is_visible = False
+            bcoll_IK_Arm_L.is_visible = False
+            bcoll_IK_Arm_R.is_visible = False
+
+            # Proxy
+            bcoll_Proxy_Leg_L.is_visible = False
+            bcoll_Proxy_Leg_R.is_visible = False
+            bcoll_Proxy_Arm_L.is_visible = False
+            bcoll_Proxy_Arm_R.is_visible = False
+
+            # EffBones
+            bcoll_EffBones_Leg_L.is_visible = False
+            bcoll_EffBones_Leg_R.is_visible = False
+            bcoll_EffBones_Arm_L.is_visible = False
+            bcoll_EffBones_Arm_R.is_visible = False
+
+            # Unused
             bcoll_Unused.is_visible = False
-            bcoll_EffBones.is_visible = False
 
         else:
             self.report({'ERROR'}, "Select an armature object")
@@ -385,21 +531,21 @@ class OBJECT_OT_SwitchLegsFKIK(bpy.types.Operator):
         obj = bpy.context.object
         
         # Check if FK is not hidden
-        if obj.data.collections_all["FK"].is_visible == True:
+        if obj.data.collections_all["FK_Leg_L"].is_visible == True:
 
             ##############
             # Switch to IK
             ##############
 
             # Hide FK
-            obj.data.collections_all["FK"].is_visible = False
+            obj.data.collections_all["FK_Leg_L"].is_visible = False
 
             # Unhide IK
-            obj.data.collections_all["IK"].is_visible = True
+            obj.data.collections_all["IK_Leg_L"].is_visible = True
 
             # Unmute constraints only on bones in the FK or IK collections
             for pbone in obj.pose.bones:
-                if any(c.name in {"IK", "FK", "Proxy", "EffBones"} for c in pbone.bone.collections):
+                if any(c.name in {"IK_Leg_L", "FK_Leg_L", "Proxy_Leg_L", "EffBones_Leg_L"} for c in pbone.bone.collections):
                     # print(f"found FK or IK collection for {pbone.name}")
                     for constraint in pbone.constraints:
                         # print(f"found constraint {constraint.name} for {pbone.name}")
@@ -411,14 +557,14 @@ class OBJECT_OT_SwitchLegsFKIK(bpy.types.Operator):
             ##############
 
             # Hide IK
-            obj.data.collections_all["IK"].is_visible = False
+            obj.data.collections_all["IK_Leg_L"].is_visible = False
 
             # Unhide FK
-            obj.data.collections_all["FK"].is_visible = True
+            obj.data.collections_all["FK_Leg_L"].is_visible = True
 
             # Mute constraints only on bones in the FK or IK collections
             for pbone in obj.pose.bones:
-                if any(c.name in {"IK", "FK", "Proxy", "EffBones"} for c in pbone.bone.collections):
+                if any(c.name in {"IK_Leg_L", "FK_Leg_L", "Proxy_Leg_L", "EffBones_Leg_L"} for c in pbone.bone.collections):
                     for constraint in pbone.constraints:
                             constraint.mute = True
 
