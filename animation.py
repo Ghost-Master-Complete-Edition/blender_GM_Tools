@@ -331,47 +331,33 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                         bone = armature.pose.bones.get(bone_name)
                         
                         # Assign the object as the custom shape for the bone
-                        bone.custom_shape = obj
-                        # print(f"Assigned {obj.name} to {bone_name}")
-                        
+                        bone.custom_shape = obj                       
                         # Assign bone as Main collection
                         bcoll_Main.assign(bone)
 
-                        # Remove bone from Extra collection
-                        bcoll_Unused.unassign(bone)
-                        
-                        # Assign bone as FK collection if it's in the FK list
-                        for a in range (len(bones_FK)):
-                            if bone_name == bones_FK[a]:
-                                bcoll_Main.unassign(bone)
-                                bcoll_FK.assign(bone)
+            # Assign bone collection from list function
+            def assign_bone_collection_from_list(bone_list, collection_name):
+                armature = bpy.context.object
+                bcoll_Main = armature.data.collections_all["Main"]
+                bcoll_Unused = armature.data.collections_all["Unused"]
+                target_collection = armature.data.collections_all[collection_name]
 
-                        # Assign bone as IK collection if it's in the IK list
-                        for a in range (len(bones_IK)):
-                            if bone_name == bones_IK[a]:
-                                bcoll_Main.unassign(bone)
-                                bcoll_IK.assign(bone)
+                for bone_name in bone_list:
+                    if bone_name in armature.data.bones:
+                        bone = armature.pose.bones[bone_name]
+                        if any(c.name == "Main" for c in bone.bone.collections):
+                            bcoll_Main.unassign(bone)
+                        else:
+                            bcoll_Unused.unassign(bone)
+                        target_collection.assign(bone)
                     else:
-                            print(f"No bone named {bone_name} found in the armature.")
-
-            # Assign bone as Proxy collection if it's in the Proxy list
-            for bone_name in bones_PROXY:
-                if bone_name in armature.data.bones:
-                    bone = armature.pose.bones[bone_name]
-                    bcoll_Unused.unassign(bone)
-                    bcoll_Proxy.assign(bone)
-                else:
-                    print(f"Proxy bone '{bone_name}' not found in the armature.")
-
-            # Assign bone as EffBones collection if it's in the EffBones list
-            for bone_name in bones_effBones:
-                if bone_name in armature.data.bones:
-                    bone = armature.pose.bones[bone_name]
-                    bcoll_Unused.unassign(bone)
-                    bcoll_EffBones.assign(bone)
-                else:
-                    print(f"Effector bone '{bone_name}' not found in the armature.")
-
+                        print(f"Bone '{bone_name}' not found in the armature.")
+           
+            # Assign bones to their respective collections
+            assign_bone_collection_from_list(bones_FK, "FK")
+            assign_bone_collection_from_list(bones_IK, "IK")
+            assign_bone_collection_from_list(bones_PROXY, "Proxy")
+            assign_bone_collection_from_list(bones_effBones, "EffBones")
                     
 
             # Hide collections
