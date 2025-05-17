@@ -308,14 +308,16 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             bcoll_Main     = add_collection("Main", parent=bcoll_Gm_Rig)
             bcoll_FK       = add_collection("FK", parent=bcoll_Gm_Rig)
             bcoll_IK       = add_collection("IK", parent=bcoll_Gm_Rig)
-            bcoll_Proxy    = add_collection("Proxy", parent=bcoll_Gm_Rig)
+
             bcoll_Extra    = add_collection("Extra", parent=bcoll_Gm_Rig)
-            bcoll_EffBones = add_collection("EffBones", parent=bcoll_Gm_Rig)
+            bcoll_Unused   = add_collection("Unused", parent=bcoll_Extra)
+            bcoll_Proxy    = add_collection("Proxy", parent=bcoll_Extra)
+            bcoll_EffBones = add_collection("EffBones", parent=bcoll_Extra)
 
 
             # Start by assigning every bone in armature to the Extra collection
             for bone in armature.data.bones:
-                bcoll_Extra.assign(armature.pose.bones.get(bone.name))
+                bcoll_Unused.assign(armature.pose.bones.get(bone.name))
 
             # Assign custom shapes to bones based on object names
             for obj in bpy.data.objects:
@@ -336,7 +338,7 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                         bcoll_Main.assign(bone)
 
                         # Remove bone from Extra collection
-                        bcoll_Extra.unassign(bone)
+                        bcoll_Unused.unassign(bone)
                         
                         # Assign bone as FK collection if it's in the FK list
                         for a in range (len(bones_FK)):
@@ -356,7 +358,7 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             for bone_name in bones_PROXY:
                 if bone_name in armature.data.bones:
                     bone = armature.pose.bones[bone_name]
-                    bcoll_Extra.unassign(bone)
+                    bcoll_Unused.unassign(bone)
                     bcoll_Proxy.assign(bone)
                 else:
                     print(f"Proxy bone '{bone_name}' not found in the armature.")
@@ -365,7 +367,7 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             for bone_name in bones_effBones:
                 if bone_name in armature.data.bones:
                     bone = armature.pose.bones[bone_name]
-                    bcoll_Extra.unassign(bone)
+                    bcoll_Unused.unassign(bone)
                     bcoll_EffBones.assign(bone)
                 else:
                     print(f"Effector bone '{bone_name}' not found in the armature.")
@@ -375,7 +377,7 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             # Hide collections
             bcoll_IK.is_visible = False
             bcoll_Proxy.is_visible = False
-            bcoll_Extra.is_visible = False
+            bcoll_Unused.is_visible = False
             bcoll_EffBones.is_visible = False
 
         else:
