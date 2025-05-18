@@ -123,6 +123,14 @@ class GHOST_MASTER_HELPER_PT_EntityEditingPanel(bpy.types.Panel):
 
         #Add a button to transfer nullboxes
         layout.operator("object.transfer_nullboxes", text="Transfer Nullboxes")
+
+        layout.separator()
+
+        #Add a button to create UV driver
+        layout.operator("object.create_uv_driver", text="Create UV Driver")
+
+        #Add a button to relink UV Driver
+        layout.operator("object.relink_uv_driver", text="Relink UV Driver")
         
 def register():
     bpy.utils.register_class(GHOST_MASTER_HELPER_PT_GeneralPanel)
