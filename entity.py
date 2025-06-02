@@ -1,5 +1,6 @@
 import bpy
 import mathutils
+from collections import defaultdict
 
 # Transfer Nullboxes Operator
 class OBJECT_OT_TransferNullboxes(bpy.types.Operator):
@@ -13,10 +14,19 @@ class OBJECT_OT_TransferNullboxes(bpy.types.Operator):
         # Get the active object (assumed to be an empty)
         active_empty = bpy.context.active_object
         selected_objects = bpy.context.selected_objects
-        existing_ids = []
+        existing_ids_by_category = defaultdict(list)
 
         # Filter for non-active selected empties
         non_active_empties = [obj for obj in selected_objects if obj != active_empty and obj.type == 'EMPTY']
+
+        # Collect existing IDs from active_empty's children
+        for child in active_empty.children:
+            if "nullboxes" in child.keys() and "nullbox_ids" in child.keys():
+                category = child["nullboxes"]
+                try:
+                    existing_ids_by_category[category].append(int(child["nullbox_ids"]))
+                except ValueError:
+                    pass  # skip non-integer ids
 
         # Set active object mode to OBJECT to ensure we can manipulate parenting
         bpy.ops.object.mode_set(mode='OBJECT')
@@ -33,18 +43,14 @@ class OBJECT_OT_TransferNullboxes(bpy.types.Operator):
 
                     # Clear parent but keep transform
                     bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')
-            
-                    # Collect existing nullbox_ids from active_empty's children
-                    for child in active_empty.children:
-                        if "nullbox_ids" in child.keys():
-                            try:
-                                existing_ids.append(int(child["nullbox_ids"]))
-                            except ValueError:
-                                pass  # skip if not an int
-
+                    
+                    # Assign the duplicated child to the active empty
+                    category = child["nullboxes"]
                     # Determine the next available ID
-                    next_id = max(existing_ids, default=-1) + 1
-                    dup["nullbox_ids"] = str(next_id)  # assign new ID to the duplicate
+                    next_id = max(existing_ids_by_category[category], default=-1) + 1
+                    dup["nullboxes"] = category
+                    dup["nullbox_ids"] = str(next_id)
+                    existing_ids_by_category[category].append(next_id)
 
                     # Check if the duplicated empty's name starts with "MDL-AP" and has a number
                     if dup.name.startswith("MDL-AP"):
