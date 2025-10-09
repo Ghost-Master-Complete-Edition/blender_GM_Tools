@@ -86,6 +86,7 @@ class GHOST_MASTER_HELPER_PT_MapEditingPanel(bpy.types.Panel):
         
         # Set Floor Button
         layout.operator("object.set_floor_property", text="Set Floor")
+        layout.operator("object.split_faces_keep_normals", text="Split Faces Normal Transfer")
 
 class GHOST_MASTER_HELPER_PT_GhostMasterAnimationPanel(bpy.types.Panel):
     """Creates IK setup for Ghost Master rig"""

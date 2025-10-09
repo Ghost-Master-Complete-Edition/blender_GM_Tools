@@ -1,4 +1,5 @@
 import bpy
+import bmesh
 
 def update_ice_layer_visibility(self, context):
     """Update the visibility of objects with 'mat_2pssnow2' material."""
@@ -65,12 +66,78 @@ class OBJECT_OT_SetFloorProperty(bpy.types.Operator):
             obj["FLOORS"] = floors_value
 
         return {'FINISHED'}
-        
+
+
+def split_every_face_keep_normals(self, context):
+    if bpy.context.mode != 'OBJECT':
+        self.report({'ERROR'}, "Please switch to Object Mode first.")
+        return {'CANCELLED'}
+    # Store all selected mesh objects
+    selected_meshes = [obj for obj in bpy.context.selected_objects if obj.type == 'MESH']
+    
+    if not selected_meshes:
+        raise Exception("Please select at least one mesh object.")
+
+    for obj in selected_meshes:
+        # Duplicate mesh
+        bpy.ops.object.select_all(action='DESELECT')
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+        bpy.ops.object.duplicate()
+        temp = bpy.context.active_object
+        temp.name = f"{obj.name}__temp"
+
+        # Reselect original
+        bpy.ops.object.select_all(action='DESELECT')
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+
+        # Enter edit mode with bmesh
+        bpy.ops.object.mode_set(mode='EDIT')
+        bm = bmesh.from_edit_mesh(obj.data)
+        bpy.ops.mesh.select_all(action='DESELECT')
+
+        # Split each face into a separate mesh (optional, depends on your goal)
+        for face in bm.faces:
+            bpy.ops.mesh.select_all(action='DESELECT')
+            face.select = True
+            bmesh.update_edit_mesh(obj.data)
+            bpy.ops.mesh.split()
+
+        # Exit edit mode
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+        # Add Data Transfer modifier
+        mod = obj.modifiers.new(name="DataTransfer", type='DATA_TRANSFER')
+        mod.object = temp
+        mod.use_loop_data = True
+        mod.data_types_loops = {'CUSTOM_NORMAL'}
+        mod.loop_mapping = 'NEAREST_NORMAL'
+    
+        # Apply modifier
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+
+        # Delete temp mesh
+        bpy.data.objects.remove(temp, do_unlink=True)
+
+        print("Split faces for objects:", [obj.name for obj in selected_meshes])
+
+class OBJECT_OT_SplitFacesKeepNormals(bpy.types.Operator):
+    """Splits every faces of selected object into seperate faces, while keeping Normals the same."""
+    bl_idname = "object.split_faces_keep_normals"
+    bl_label = "Split Faces (Keep Normals)"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        split_every_face_keep_normals(self, context)
+        return {'FINISHED'}
         
 def register():
+  bpy.utils.register_class(OBJECT_OT_SplitFacesKeepNormals)  # Register Split Faces Operator
   bpy.utils.register_class(OBJECT_OT_SetFloorProperty)  # Register Set Floor Operator
   
 def unregister():
+  bpy.utils.unregister_class(OBJECT_OT_SplitFacesKeepNormals)  # Unregister Split Faces Operator
   bpy.utils.unregister_class(OBJECT_OT_SetFloorProperty)  # Unregister Set Floor Operator 
    
 if __name__ == "__main__":
