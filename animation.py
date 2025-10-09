@@ -1,5 +1,7 @@
 import bpy
+import math
 from mathutils import Vector
+from mathutils import Matrix
 import os
 
 # GHOST MASTER AUTORIG KINDA
@@ -81,6 +83,10 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                     proxy_distal.parent = proxy_proximal
                     proxy_distal.use_connect = True
 
+                # Move tail of proximal proxy slightly on the y axis if limb is arm
+                if limb == 'Arm':
+                    proxy_proximal.tail.y += 0.01
+
                 # Automatically find the parent of the proximal bone, parent the proximal proxy to it
                 if original_proximal and original_proximal.parent:
                     parent_bone = obj.data.edit_bones.get(original_proximal.parent.name)
@@ -90,13 +96,14 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
 
                 # Automatically find the first child of the distal bone to use as the effector
                 if original_distal and original_distal.children:
-                    eff_bone = original_distal.children[0]  # First child of shinbone
 
                     # Create the IK bone
                     if limb == 'Leg':
+                        eff_bone = original_distal.children[0]  # First child of shinbone
                         ik_bone = obj.data.edit_bones.new(f'{side_prefix}-Foot-Ik')
 
                     elif limb == 'Arm':
+                        eff_bone = original_distal.children[0].children[0].children[0].children[0]  # 4th child of forearm
                         ik_bone = obj.data.edit_bones.new(f'{side_prefix}-Hand-Ik')
                    
                     ik_bone.head = eff_bone.head
@@ -122,8 +129,8 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                     
                     elif limb == 'Arm':
                         pole_bone = obj.data.edit_bones.new(f'{side_prefix}-Elbow-Pole')
-                        pole_bone.head = pole_position
-                        pole_bone.tail = pole_position + Vector((0.0, -0.2, 0.0))
+                        pole_bone.head = pole_position + Vector((0.0, 0.8, 0.0))
+                        pole_bone.tail = pole_position + Vector((0.0, 1.0, 0.0))
                     
                     pole_bone.use_deform = False
                     if parent_bone:
@@ -137,10 +144,10 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             setup_ik('Leg', 'MDL-jnt-R-thighbone', 'MDL-jnt-R-leg-shin', 'R')
 
             # # Setup IK for the left arm
-            # setup_ik('Arm', 'MDL-jnt-L-bicepBONE', 'MDL-jnt-L-FOREARM', 'L')
+            setup_ik('Arm', 'MDL-jnt-L-bicepBONE', 'MDL-jnt-L-FOREARM', 'L')
 
             # # Setup IK for the right arm
-            # setup_ik('Arm', 'MDL-jnt-R-bicepBONE', 'MDL-jnt49_2-RFarm', 'R')
+            setup_ik('Arm', 'MDL-jnt-R-bicepBONE', 'MDL-jnt49_2-RFarm', 'R')
 
 
             # Switch back to Object Mode
@@ -155,28 +162,16 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                 original_proximal = obj.pose.bones.get(proximal_name)
                 original_distal = obj.pose.bones.get(distal_name)
 
-                # Proximal bone constraints
-                if original_proximal and proxy_proximal:
-                    if not any(c.type == 'CHILD_OF' and c.subtarget == proxy_proximal.name for c in original_proximal.constraints):
-                        childof_constraint = original_proximal.constraints.new('CHILD_OF')
-                        childof_constraint.name = "ChildOf_Proxy"
-                        childof_constraint.target = obj
-                        childof_constraint.subtarget = proxy_proximal.name
-                        childof_constraint.use_location_x = False
-                        childof_constraint.use_location_y = False
-                        childof_constraint.use_location_z = False
-                        childof_constraint.mute = True
-
-                # Distal bone constraints
-                if original_distal and proxy_distal:
-                    if not any(c.type == 'COPY_ROTATION' and c.subtarget == proxy_distal.name for c in original_distal.constraints):
-                        copyrot_constraint = original_distal.constraints.new('COPY_ROTATION')
-                        copyrot_constraint.name = "CopyRot_Proxy"
-                        copyrot_constraint.target = obj
-                        copyrot_constraint.subtarget = proxy_distal.name
-                        copyrot_constraint.target_space = 'LOCAL_OWNER_ORIENT'
-                        copyrot_constraint.owner_space = 'LOCAL'
-                        childof_constraint.mute = True
+                for original, proxy in [(original_proximal, proxy_proximal), (original_distal, proxy_distal)]:
+                    if original and proxy:
+                        if not any(c.type == 'COPY_ROTATION' and c.subtarget == proxy.name for c in original.constraints):
+                            copyrot_constraint = original.constraints.new('COPY_ROTATION')
+                            copyrot_constraint.name = "CopyRot_Proxy"
+                            copyrot_constraint.target = obj
+                            copyrot_constraint.target_space = 'LOCAL_OWNER_ORIENT'
+                            copyrot_constraint.owner_space = 'LOCAL'
+                            copyrot_constraint.subtarget = proxy.name
+                            copyrot_constraint.mute = True
 
                 # Normal IK contraints
                 if proxy_distal:
@@ -203,21 +198,20 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                 else:
                     self.report({'WARNING'}, f"{limb} bone {distal_name} not found.")
 
-                # Add Copy Rotation constraint to the terminal effector bone (Foot or Hand)
+                # Add Child Of constraint to the terminal effector bone (Foot or Hand)
                 pbon_terminal = obj.pose.bones.get(terminal_eff_name)
                 if pbon_terminal:
-                    # Check if Copy Rotation constraint already exists
+                    # Check if Child Of constraint already exists
                     if not any(constraint.type == 'COPY_ROTATION' for constraint in pbon_terminal.constraints):
-                        # Add Copy Rotation constraint to the foot effector bone
-                        copy_rot_constraint = pbon_terminal.constraints.new('COPY_ROTATION')
-                        copy_rot_constraint.target = obj
-                        if limb == 'Leg':
-                            copy_rot_constraint.subtarget = f'{side_prefix}-Foot-Ik'
-                        elif limb == 'Arm':
-                            copy_rot_constraint.subtarget = f'{side_prefix}-Hand-Ik'
+                        copyrot_constraint = pbon_terminal.constraints.new('COPY_ROTATION')
+                        copyrot_constraint.target = obj
 
-                        # Mute the Copy Rotation constraint by default
-                        copy_rot_constraint.mute = True
+                        if limb == 'Leg':
+                            copyrot_constraint.subtarget = f'{side_prefix}-Foot-Ik'
+                        elif limb == 'Arm':
+                            copyrot_constraint.subtarget = f'{side_prefix}-Hand-Ik'      
+                        # Mute the  constraint by default
+                        copyrot_constraint.mute = True
                     else:
                         self.report({'WARNING'}, f"Copy Rotation constraint already exists on {pbon_terminal.name}.")
                 else:
@@ -230,10 +224,10 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             add_constraints('Leg', 'MDL-jnt-R-thighbone', 'MDL-jnt-R-leg-shin', 'MDL-eff23', 'R')
 
             # Add constraints for the left arm
-            # add_constraints('Arm', 'MDL-jnt-L-bicepBONE', 'MDL-jnt-L-FOREARM', 'MDL-eff45', 'L')
+            add_constraints('Arm', 'MDL-jnt-L-bicepBONE', 'MDL-jnt-L-FOREARM', 'MDL-eff45', 'L')
 
             # # Add constraints for the right arm
-            # add_constraints('Arm', 'MDL-jnt-R-bicepBONE', 'MDL-jnt49_2-RFarm', 'MDL-eff50', 'R')
+            add_constraints('Arm', 'MDL-jnt-R-bicepBONE', 'MDL-jnt49_2-RFarm', 'MDL-eff50', 'R')
 
             #####################################################
             # BONE SHAPE IMPORT
@@ -277,44 +271,163 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             #####################################################
 
             # Define the bones assigned to collections as lists
-            bones_FK=["MDL-lfoot", "MDL-rfoot", "MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin", "MDL-jnt-L-thighbone", "MDL-jnt-R-thighbone"]
-            bones_IK=["L-Foot-Ik", "R-Foot-Ik", "L-Knee-Pole", "R-Knee-Pole"]
+            # FK 
+            FK_Leg_L = [
+                "MDL-lfoot",
+                "MDL-jnt-L-LEG-shin",
+                "MDL-jnt-L-thighbone"
+            ]
+
+            FK_Leg_R = [
+                "MDL-rfoot",
+                "MDL-jnt-R-leg-shin",
+                "MDL-jnt-R-thighbone"
+            ]
+
+            FK_Arm_L = [
+                "MDL-J-L-PalmBone1",
+                "MDL-jnt-L-wrist_rotX",
+                "MDL-jnt-L-FOREARM",
+                "MDL-jnt-L-bicepBONE"
+            ]
+
+            FK_Arm_R = [
+                "MDL-J_R-HandBone",
+                "MDL-jnt-R-wrist_rotX",
+                "MDL-jnt49_2-RFarm",
+                "MDL-jnt-R-bicepBONE"
+            ]
+            
+            # IK
+            IK_Leg_L = [
+                "L-Foot-Ik",
+                "L-Knee-Pole"
+            ]
+
+            IK_Leg_R = [
+                "R-Foot-Ik",
+                "R-Knee-Pole"
+            ]
+
+            IK_Arm_L = [
+                "L-Hand-Ik",
+                "L-Elbow-Pole"
+            ]
+
+            IK_Arm_R = [
+                "R-Hand-Ik",
+                "R-Elbow-Pole"
+            ]
+            
+            # Proxy
+
+
+            PROXY_Leg_L = [
+                "MDL-jnt-L-LEG-shin_proxy",
+                "MDL-jnt-L-thighbone_proxy"
+            ]
+
+            PROXY_Leg_R = [
+                "MDL-jnt-R-leg-shin_proxy",
+                "MDL-jnt-R-thighbone_proxy"
+            ]
+
+            PROXY_Arm_L = [
+                "MDL-jnt-L-bicepBONE_proxy",
+                "MDL-jnt-L-FOREARM_proxy"
+            ]
+
+            PROXY_Arm_R = [
+                "MDL-jnt-R-bicepBONE_proxy",
+                "MDL-jnt49_2-RFarm_proxy"
+            ]
+
+            # effBones collections 
+
+            # Initialize variables
+            effBone_Leg_L = []
+            effBone_Leg_R = []
+            effBone_Arm_L = []
+            effBone_Arm_R = []
+
+            # Pair the parent bone with the correct variable (as references)
+            ParentList = [
+                "MDL-jnt-L-LEG-shin",
+                "MDL-jnt-R-leg-shin",
+                "MDL-jnt-L-wrist_rotX",
+                "MDL-jnt-R-wrist_rotX"
+            ]
+
+            CollectionList = [
+                effBone_Leg_L,
+                effBone_Leg_R,
+                effBone_Arm_L,
+                effBone_Arm_R
+            ]
+
+            # Add children to correct list
+            for parent_bone, collection in zip(ParentList, CollectionList):
+                if parent_bone in armature.data.bones:
+                    bone = armature.pose.bones[parent_bone]
+                    if bone.children:
+                        child = bone.children[0]
+                        collection.append(child.name)
+                        print(f"Added {child.name} to collection")
+                    else:
+                        print(f"No child found for {parent_bone}")
+
+
 
             # Check if bone collections are already created, if not, create them
+
+            #add collection function
+            def add_collection (name, parent = None):
+                obj = bpy.context.object
+                result = obj.data.collections_all.get(name)
+                if result is None:
+                    if parent is None:
+                        result = obj.data.collections.new(name)
+                    else:
+                        result = obj.data.collections.new(name, parent=parent)
+                else:
+                    print(f"Warning: {name} collection already exists.")
+                return result
+                
+            # Add the collections
+            bcoll_Gm_Rig   = add_collection("GM Rig")
+            bcoll_Main     = add_collection("Main", parent=bcoll_Gm_Rig)
             
-            bcoll_Gm_Rig = armature.data.collections_all.get("GM Rig")
-            if bcoll_Gm_Rig is None:
-                bcoll_Gm_Rig = armature.data.collections.new("GM Rig")
-            else:
-                self.report({'WARNING'}, "GM Rig collection already exists.")
+            bcoll_FK       = add_collection("FK", parent=bcoll_Gm_Rig)
+            bcoll_FK_Leg_L = add_collection("FK_Leg_L", parent=bcoll_FK)
+            bcoll_FK_Leg_R = add_collection("FK_Leg_R", parent=bcoll_FK)
+            bcoll_FK_Arm_L = add_collection("FK_Arm_L", parent=bcoll_FK)
+            bcoll_FK_Arm_R = add_collection("FK_Arm_R", parent=bcoll_FK)
 
-            bcoll_Main = armature.data.collections_all.get("Main")
-            if bcoll_Main is None:
-                bcoll_Main = armature.data.collections.new("Main", parent=bcoll_Gm_Rig)
-            else:
-                self.report({'WARNING'}, "Main collection already exists.")
+            bcoll_IK       = add_collection("IK", parent=bcoll_Gm_Rig)
+            bcoll_IK_Leg_L = add_collection("IK_Leg_L", parent=bcoll_IK)
+            bcoll_IK_Leg_R = add_collection("IK_Leg_R", parent=bcoll_IK)
+            bcoll_IK_Arm_L = add_collection("IK_Arm_L", parent=bcoll_IK)
+            bcoll_IK_Arm_R = add_collection("IK_Arm_R", parent=bcoll_IK)
+            
+            bcoll_Extra    = add_collection("Extra", parent=bcoll_Gm_Rig)
+            bcoll_Unused   = add_collection("Unused", parent=bcoll_Extra)
 
-            bcoll_FK = armature.data.collections_all.get("FK")
-            if bcoll_FK is None:
-                bcoll_FK = armature.data.collections.new("FK", parent=bcoll_Gm_Rig)
-            else:
-                self.report({'WARNING'}, "FK collection already exists.")
+            bcoll_Proxy    = add_collection("Proxy", parent=bcoll_Extra)
+            bcoll_Proxy_Leg_L = add_collection("Proxy_Leg_L", parent=bcoll_Proxy)
+            bcoll_Proxy_Leg_R = add_collection("Proxy_Leg_R", parent=bcoll_Proxy)
+            bcoll_Proxy_Arm_L = add_collection("Proxy_Arm_L", parent=bcoll_Proxy)
+            bcoll_Proxy_Arm_R = add_collection("Proxy_Arm_R", parent=bcoll_Proxy)
 
-            bcoll_IK = armature.data.collections_all.get("IK")
-            if bcoll_IK is None:
-                bcoll_IK = armature.data.collections.new("IK", parent=bcoll_Gm_Rig)
-            else:
-                self.report({'WARNING'}, "IK collection already exists.")
+            bcoll_EffBones = add_collection("EffBones", parent=bcoll_Extra)
+            bcoll_EffBones_Leg_L = add_collection("EffBones_Leg_L", parent=bcoll_EffBones)
+            bcoll_EffBones_Leg_R = add_collection("EffBones_Leg_R", parent=bcoll_EffBones)
+            bcoll_EffBones_Arm_L = add_collection("EffBones_Arm_L", parent=bcoll_EffBones)
+            bcoll_EffBones_Arm_R = add_collection("EffBones_Arm_R", parent=bcoll_EffBones)
 
-            bcoll_Extra = armature.data.collections_all.get("Extra")
-            if bcoll_Extra is None:
-                bcoll_Extra = armature.data.collections.new("Extra", parent=bcoll_Gm_Rig)
-            else:
-                self.report({'WARNING'}, "Extra collection already exists.")
 
             # Start by assigning every bone in armature to the Extra collection
             for bone in armature.data.bones:
-                bcoll_Extra.assign(armature.pose.bones.get(bone.name))
+                bcoll_Unused.assign(armature.pose.bones.get(bone.name))
 
             # Assign custom shapes to bones based on object names
             for obj in bpy.data.objects:
@@ -328,34 +441,76 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                         bone = armature.pose.bones.get(bone_name)
                         
                         # Assign the object as the custom shape for the bone
-                        bone.custom_shape = obj
-                        print(f"Assigned {obj.name} to {bone_name}")
-                        
+                        bone.custom_shape = obj                       
                         # Assign bone as Main collection
                         bcoll_Main.assign(bone)
 
-                        # Remove bone from Extra collection
-                        bcoll_Extra.unassign(bone)
-                        
-                        # Assign bone as FK collection if it's in the FK list
-                        for a in range (len(bones_FK)):
-                            if bone_name == bones_FK[a]:
-                                bcoll_Main.unassign(bone)
-                                bcoll_FK.assign(bone)
+            # Assign bone collection from list function
+            def assign_bone_collection_from_list(bone_list, collection_name):
+                armature = bpy.context.object
+                bcoll_Main = armature.data.collections_all["Main"]
+                bcoll_Unused = armature.data.collections_all["Unused"]
+                target_collection = armature.data.collections_all[collection_name]
 
-                        # Assign bone as IK collection if it's in the IK list
-                        for a in range (len(bones_IK)):
-                            if bone_name == bones_IK[a]:
-                                bcoll_Main.unassign(bone)
-                                bcoll_IK.assign(bone)
-
-                                          
+                for bone_name in bone_list:
+                    if bone_name in armature.data.bones:
+                        bone = armature.pose.bones[bone_name]
+                        if any(c.name == "Main" for c in bone.bone.collections):
+                            bcoll_Main.unassign(bone)
+                        else:
+                            bcoll_Unused.unassign(bone)
+                        target_collection.assign(bone)
                     else:
-                        print(f"No bone named {bone_name} found in the armature.")
+                        print(f"Bone '{bone_name}' not found in the armature.")
+           
+            # Assign bones to their respective collections
+            # FK
+            assign_bone_collection_from_list(FK_Leg_L, "FK_Leg_L")
+            assign_bone_collection_from_list(FK_Leg_R, "FK_Leg_R")
+            assign_bone_collection_from_list(FK_Arm_L, "FK_Arm_L")
+            assign_bone_collection_from_list(FK_Arm_R, "FK_Arm_R")
 
-            # Hide IK and Extra collections
-            bcoll_IK.is_visible = False
-            bcoll_Extra.is_visible = False
+            # IK
+            assign_bone_collection_from_list(IK_Leg_L, "IK_Leg_L")
+            assign_bone_collection_from_list(IK_Leg_R, "IK_Leg_R")
+            assign_bone_collection_from_list(IK_Arm_L, "IK_Arm_L")
+            assign_bone_collection_from_list(IK_Arm_R, "IK_Arm_R")
+
+            # Proxy
+            assign_bone_collection_from_list(PROXY_Leg_L, "Proxy_Leg_L")
+            assign_bone_collection_from_list(PROXY_Leg_R, "Proxy_Leg_R")
+            assign_bone_collection_from_list(PROXY_Arm_L, "Proxy_Arm_L")
+            assign_bone_collection_from_list(PROXY_Arm_R, "Proxy_Arm_R")
+
+            # EffBones
+            assign_bone_collection_from_list(effBone_Leg_L, "EffBones_Leg_L")
+            assign_bone_collection_from_list(effBone_Leg_R, "EffBones_Leg_R")
+            assign_bone_collection_from_list(effBone_Arm_L, "EffBones_Arm_L")
+            assign_bone_collection_from_list(effBone_Arm_R, "EffBones_Arm_R")
+
+
+            # Hide collections 
+
+            # IK
+            bcoll_IK_Leg_L.is_visible = False
+            bcoll_IK_Leg_R.is_visible = False
+            bcoll_IK_Arm_L.is_visible = False
+            bcoll_IK_Arm_R.is_visible = False
+
+            # Proxy
+            bcoll_Proxy_Leg_L.is_visible = False
+            bcoll_Proxy_Leg_R.is_visible = False
+            bcoll_Proxy_Arm_L.is_visible = False
+            bcoll_Proxy_Arm_R.is_visible = False
+
+            # EffBones
+            bcoll_EffBones_Leg_L.is_visible = False
+            bcoll_EffBones_Leg_R.is_visible = False
+            bcoll_EffBones_Arm_L.is_visible = False
+            bcoll_EffBones_Arm_R.is_visible = False
+
+            # Unused
+            bcoll_Unused.is_visible = False
 
         else:
             self.report({'ERROR'}, "Select an armature object")
@@ -364,57 +519,67 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
 
 
 
+# Switcher Base Class :)
+class OBJECT_OT_SwitchFKIKBase(bpy.types.Operator):
+    """Base class to switch FK/IK visibility and constraint state"""
+    bl_options = {'REGISTER', 'UNDO'}
 
-class OBJECT_OT_SwitchLegsFKIK(bpy.types.Operator):
-    """Switch between FK and IK for the legs"""
-    bl_idname = "object.switch_legs_fk_ik"
-    bl_label = "Switch Legs FK/IK"
-   
-    
+    suffix: str = ""
+
     def execute(self, context):
-        
         obj = bpy.context.object
+        fk_coll = f"FK_{self.suffix}"
+        ik_coll = f"IK_{self.suffix}"
+        proxy_coll = f"Proxy_{self.suffix}"
+        effbones_coll = f"EffBones_{self.suffix}"
 
-		# Check if FK is not hidden
-        if obj.data.collections_all["FK"].is_visible == True:
-                
-            ##############
+        coll_all = obj.data.collections_all
+
+        is_fk_active = coll_all.get(fk_coll, None) and coll_all[fk_coll].is_visible
+
+        if is_fk_active:
             # Switch to IK
-            ##############
-       
-            # Hide FK
-            obj.data.collections_all["FK"].is_visible = False
+            coll_all[fk_coll].is_visible = False
+            coll_all[ik_coll].is_visible = True
 
-            # Unhide IK
-            obj.data.collections_all["IK"].is_visible = True
-                    
-            # Unmute all constraints
             for pbone in obj.pose.bones:
-                for constraint in pbone.constraints:
-                    constraint.mute = False
-        
-                    
+                if any(c.name in {fk_coll, ik_coll, proxy_coll, effbones_coll} for c in pbone.bone.collections):
+                    for constraint in pbone.constraints:
+                        constraint.mute = False
+
         else:
-            ##############
-			# Switch to FK
-			##############
-					
-            # Hide IK
-            obj.data.collections_all["IK"].is_visible = False
+            # Switch to FK
+            coll_all[ik_coll].is_visible = False
+            coll_all[fk_coll].is_visible = True
 
-            # Unhide FK
-            obj.data.collections_all["FK"].is_visible = True
-					
-            # Mute IK constraints
             for pbone in obj.pose.bones:
-                for constraint in pbone.constraints:
-                    if constraint.type == 'IK' or constraint.type == 'COPY_ROTATION' or constraint.type == 'CHILD_OF':
+                if any(c.name in {fk_coll, ik_coll, proxy_coll, effbones_coll} for c in pbone.bone.collections):
+                    for constraint in pbone.constraints:
                         constraint.mute = True
-
-     
 
         return {'FINISHED'}
 
+# inherited switcher classes
+
+class OBJECT_OT_SwitchLeg_L_FKIK(OBJECT_OT_SwitchFKIKBase):
+    bl_idname = "object.switch_fkik_leg_l"
+    bl_label = "Leg L"
+    suffix = "Leg_L"
+
+class OBJECT_OT_SwitchLeg_R_FKIK(OBJECT_OT_SwitchFKIKBase):
+    bl_idname = "object.switch_fkik_leg_r"
+    bl_label = "Leg R"
+    suffix = "Leg_R"
+
+class OBJECT_OT_SwitchArm_L_FKIK(OBJECT_OT_SwitchFKIKBase):
+    bl_idname = "object.switch_fkik_arm_l"
+    bl_label = "Arm L"
+    suffix = "Arm_L"
+
+class OBJECT_OT_SwitchArm_R_FKIK(OBJECT_OT_SwitchFKIKBase):
+    bl_idname = "object.switch_fkik_arm_r"
+    bl_label = "Arm R"
+    suffix = "Arm_R"
 
 
 class OBJECT_OT_DeleteRigSetup(bpy.types.Operator):
@@ -435,8 +600,8 @@ class OBJECT_OT_DeleteRigSetup(bpy.types.Operator):
             # Switch to Edit Mode to modify bones
             bpy.ops.object.mode_set(mode='EDIT')
 
-            # Delete the constraints from the shin and thighbones
-            for bone_name in ["MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin", "MDL-jnt-L-thighbone", "MDL-jnt-R-thighbone"]:
+            # Delete the constraints from the proximals and distals
+            for bone_name in ["MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin", "MDL-jnt-L-thighbone", "MDL-jnt-R-thighbone",'MDL-jnt-L-bicepBONE','MDL-jnt-L-FOREARM','MDL-jnt-R-bicepBONE','MDL-jnt49_2-RFarm']:
                 bone = obj.data.edit_bones.get(bone_name)
                 if bone:
                     pbone = obj.pose.bones.get(bone_name)
@@ -445,8 +610,8 @@ class OBJECT_OT_DeleteRigSetup(bpy.types.Operator):
                             pbone.constraints.remove(constraint)
 
 
-            # Delete the copy rotation constraint from the first child of shin bones
-            for bone_name in ["MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin"]:
+            # Delete the c constraint from the effectors from their parents
+            for bone_name in ["MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin","MDL-jnt-R-wrist_rotX","MDL-jnt-L-wrist_rotX"]:
                 bone = obj.data.edit_bones.get(bone_name)
                 if bone:
                     pbone = obj.pose.bones.get(bone_name)
@@ -455,20 +620,20 @@ class OBJECT_OT_DeleteRigSetup(bpy.types.Operator):
                         if bone.children:
                             eff_bone = pbone.id_data.pose.bones.get(bone.children[0].name)  # Get the pose bone of the first child
                             if eff_bone:
-                                # Iterate through the constraints of the first child and remove any Copy Rotation constraint
+                                # Iterate through the constraints of the first child and remove any Child Of constraint
                                 for constraint in eff_bone.constraints:
                                     if constraint.type == 'COPY_ROTATION':
                                         eff_bone.constraints.remove(constraint)
             
                                 
             # Delete the IK bones and pole targets
-            for bone_name in ["L-Foot-Ik", "R-Foot-Ik", "L-Knee-Pole", "R-Knee-Pole"]:
+            for bone_name in ["L-Foot-Ik", "R-Foot-Ik", "L-Knee-Pole", "R-Knee-Pole","L-Hand-Ik", "R-Hand-Ik","L-Elbow-Pole","R-Elbow-Pole"]:
                 bone = obj.data.edit_bones.get(bone_name)
                 if bone:
                     obj.data.edit_bones.remove(bone)
 
             # Delete proxy bones
-            for bone_name in ["MDL-jnt-L-LEG-shin_proxy", "MDL-jnt-R-leg-shin_proxy", "MDL-jnt-L-thighbone_proxy", "MDL-jnt-R-thighbone_proxy"]:
+            for bone_name in ["MDL-jnt-L-LEG-shin_proxy", "MDL-jnt-R-leg-shin_proxy", "MDL-jnt-L-thighbone_proxy", "MDL-jnt-R-thighbone_proxy",'MDL-jnt-L-bicepBONE_proxy','MDL-jnt-L-FOREARM_proxy','MDL-jnt-R-bicepBONE_proxy','MDL-jnt49_2-RFarm_proxy']:
                 bone = obj.data.edit_bones.get(bone_name)
                 if bone:
                     obj.data.edit_bones.remove(bone)
@@ -562,12 +727,20 @@ class OBJECT_OT_SanityCheck(bpy.types.Operator):
 
 def register():
     bpy.utils.register_class(OBJECT_OT_GhostMasterIK)
-    bpy.utils.register_class(OBJECT_OT_SwitchLegsFKIK)
     bpy.utils.register_class(OBJECT_OT_DeleteRigSetup)
     bpy.utils.register_class(OBJECT_OT_SanityCheck)
 
+    bpy.utils.register_class(OBJECT_OT_SwitchLeg_L_FKIK)
+    bpy.utils.register_class(OBJECT_OT_SwitchLeg_R_FKIK)
+    bpy.utils.register_class(OBJECT_OT_SwitchArm_L_FKIK)
+    bpy.utils.register_class(OBJECT_OT_SwitchArm_R_FKIK)
+
 def unregister():
     bpy.utils.unregister_class(OBJECT_OT_GhostMasterIK)
-    bpy.utils.unregister_class(OBJECT_OT_SwitchLegsFKIK)
     bpy.utils.unregister_class(OBJECT_OT_DeleteRigSetup)
     bpy.utils.unregister_class(OBJECT_OT_SanityCheck)
+
+    bpy.utils.unregister_class(OBJECT_OT_SwitchLeg_L_FKIK)
+    bpy.utils.unregister_class(OBJECT_OT_SwitchLeg_R_FKIK)
+    bpy.utils.unregister_class(OBJECT_OT_SwitchArm_L_FKIK)
+    bpy.utils.unregister_class(OBJECT_OT_SwitchArm_R_FKIK)

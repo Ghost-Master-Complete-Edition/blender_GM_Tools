@@ -95,12 +95,23 @@ class GHOST_MASTER_HELPER_PT_GhostMasterAnimationPanel(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = 'GM Tools'
 
+    # Define properties
+    bpy.types.Scene.use_FK_IK_Switch = bpy.props.BoolProperty(name="FK/IK Switch", default=True)
+
     def draw(self, context):
         layout = self.layout
         layout.operator("object.ghost_master_ik", text="Rig Setup")
+        scene = context.scene
+        row = layout.row()
         
         # Add button for FKIK switch
-        layout.operator("object.switch_legs_fk_ik", text="Switch FK/IK for legs")
+        row.prop(scene, "use_FK_IK_Switch", text="FK/IK Switch", icon="TRIA_DOWN" if scene.use_FK_IK_Switch else "TRIA_RIGHT", emboss=False)
+        if scene.use_FK_IK_Switch:
+            grid = layout.grid_flow(columns=2, even_columns=True, even_rows=True, align=True)
+            grid.operator("object.switch_fkik_arm_r", text="Arm R")
+            grid.operator("object.switch_fkik_leg_r", text="Leg R")
+            grid.operator("object.switch_fkik_arm_l", text="Arm L")
+            grid.operator("object.switch_fkik_leg_l", text="Leg L")
 
         # Add button for Delete rig Setup
         layout.operator("object.delete_rig_setup", text="Delete Rig Setup")
