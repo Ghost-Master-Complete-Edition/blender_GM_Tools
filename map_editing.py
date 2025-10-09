@@ -138,7 +138,7 @@ def register():
   
 def unregister():
   bpy.utils.unregister_class(OBJECT_OT_SplitFacesKeepNormals)  # Unregister Split Faces Operator
-  bpy.utils.unregister_class(OBJECT_OT_SetFloorProperty)  # Unregister Set Floor Operator 
+  bpy.utils.unregister_class(OBJECT_OT_SetFloorProperty)  # Unregister Set Floor Operator/
    
 if __name__ == "__main__":
     register()
