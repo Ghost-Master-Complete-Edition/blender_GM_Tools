@@ -23,6 +23,10 @@ class GHOST_MASTER_HELPER_PT_GeneralPanel(bpy.types.Panel):
         # Button to Set Specular Tint to Black
         layout.operator("object.set_specular_tint_to_black", text="Set Specular Tint to Black")
 
+        # Button to Setup Alpha Clip Material
+        layout.operator("object.setup_alpha_clip_material", text="Setup Alpha Clip Material")
+
+
         # Armature Panel
         row = layout.row()
         row.prop(scene, "use_armature_flags", text="Armature", icon="TRIA_DOWN" if scene.use_armature_flags else "TRIA_RIGHT", emboss=False)
