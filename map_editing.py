@@ -29,6 +29,23 @@ def update_floor_visibility(self, context):
                 (context.scene.show_floor_1 and '1' in object_floors)
             )
             obj.hide_set(not is_visible)
+        elif obj.type == 'EMPTY' and "clump_floor_flags" in obj:
+            entity_floors = obj["clump_floor_flags"]
+            is_visible = (
+                (context.scene.show_floor_6 and '6' in entity_floors) or
+                (context.scene.show_floor_5 and '5' in entity_floors) or
+                (context.scene.show_floor_4 and '4' in entity_floors) or
+                (context.scene.show_floor_3 and '3' in entity_floors) or
+                (context.scene.show_floor_2 and '2' in entity_floors) or
+                (context.scene.show_floor_1 and '1' in entity_floors)
+            )
+            hide_recursive(obj, not is_visible)
+       
+
+def hide_recursive(obj, hidden):
+    obj.hide_set(hidden)
+    for child in obj.children:
+        hide_recursive(child, hidden)
 
 def update_collider_visibility(self, context):
     """Update visibility of objects with the 'IS_COLLIDER' custom property set to 'TRUE'."""
