@@ -21,7 +21,7 @@ right_shin_bones = ["MDL-jnt-R-leg-shin"]
 left_thigh_bones = ["MDL-jnt-L-thighbone"]
 left_shin_bones = ["MDL-jnt-L-LEG-shin"]
 
-left_hand_bones = ["MDL-jnt-L-HandBone","MDL-J-L-PalmBone1 ","MDL-lfthand"]
+left_hand_bones = ["MDL-jnt-L-HandBone","MDL-J-L-PalmBone1","MDL-lfthand"]
 left_wrist_bones = ["MDL-jnt-L-wrist_rotX"]
 
 right_hand_bones = ["MDL-J_R-HandBone","MDL-rthand"]
@@ -48,22 +48,22 @@ boneArrays = [
 ]
 
 
-# Automatically find the effector bone from a parent bone.
-# depth = 1 for legs
-# depth = 4 for arms
-def find_effector_bone(armature, parent_bone_name, depth):
-    bone = armature.data.bones.get(parent_bone_name)
+# Automatically find the effector bone by walking UP the hierarchy
+# from the hand/foot bone.
+# Always walks up exactly 2 parent bones.
+def find_effector_bone(armature, child_bone_name):
+    bone = armature.data.bones.get(child_bone_name)
 
     if not bone:
-        print(f"Effector finder: parent bone '{parent_bone_name}' not found.")
+        print(f"Effector finder: child bone '{child_bone_name}' not found.")
         return None
 
-    for _ in range(depth):
-        if not bone.children:
-            print(f"Effector finder: no child found while searching from '{parent_bone_name}'.")
+    for _ in range(2):
+        if not bone.parent:
+            print(f"Effector finder: no parent found while searching up from '{child_bone_name}'.")
             return None
 
-        bone = bone.children[0]
+        bone = bone.parent
 
     return bone.name
 
@@ -104,26 +104,22 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
 
             left_leg_effector = find_effector_bone(
                 armature,
-                left_shin_bones[0],
-                1
+                left_foot_bones[0]
             )
 
             right_leg_effector = find_effector_bone(
                 armature,
-                right_shin_bones[0],
-                1
+                right_foot_bones[0]
             )
 
             left_arm_effector = find_effector_bone(
                 armature,
-                left_forearm_bones[0],
-                4
+                left_hand_bones[0]
             )
 
             right_arm_effector = find_effector_bone(
                 armature,
-                right_forearm_bones[0],
-                4
+                right_hand_bones[0]
             )
 
 
@@ -750,26 +746,22 @@ class OBJECT_OT_DeleteRigSetup(bpy.types.Operator):
             # Find the effectors automatically
             left_leg_effector = find_effector_bone(
                 armature,
-                left_shin_bones[0],
-                1
+                left_foot_bones[0]
             )
 
             right_leg_effector = find_effector_bone(
                 armature,
-                right_shin_bones[0],
-                1
+                right_foot_bones[0]
             )
 
             left_arm_effector = find_effector_bone(
                 armature,
-                left_forearm_bones[0],
-                4
+                left_hand_bones[0]
             )
 
             right_arm_effector = find_effector_bone(
                 armature,
-                right_forearm_bones[0],
-                4
+                right_hand_bones[0]
             )
 
             # Switch to Edit Mode to modify bones
