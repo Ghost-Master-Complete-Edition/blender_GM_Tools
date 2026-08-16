@@ -15,12 +15,20 @@ right_forearm_bones = ["MDL-jnt49_2-RFarm","MDL-jntR4arm"]
 left_upper_arm_bones = ["MDL-jnt-L-bicepBONE","MDL-Larmjnt"]
 left_forearm_bones = ["MDL-jnt-L-FOREARM","MDL-L4armjnt"]
 
-
 right_thigh_bones = ["MDL-jnt-R-thighbone"]
 right_shin_bones = ["MDL-jnt-R-leg-shin"]
 
 left_thigh_bones = ["MDL-jnt-L-thighbone"]
 left_shin_bones = ["MDL-jnt-L-LEG-shin"]
+
+left_hand_bones = ["MDL-jnt-L-HandBone","MDL-J-L-PalmBone1 ","MDL-lfthand"]
+left_wrist_bones = ["MDL-jnt-L-wrist_rotX"]
+
+right_hand_bones = ["MDL-J_R-HandBone","MDL-rthand"]
+right_wrist_bones = ["MDL-jnt-R-wrist_rotX"]
+
+left_foot_bones =["MDL-lfoot"]
+right_foot_bones =["MDL-rfoot"]
 
 boneArrays = [
     right_upper_arm_bones,
@@ -30,7 +38,13 @@ boneArrays = [
     right_thigh_bones,
     right_shin_bones,
     left_thigh_bones,
-    left_shin_bones
+    left_shin_bones,
+    left_hand_bones,
+    left_wrist_bones,
+    right_hand_bones,
+    right_wrist_bones,
+    left_foot_bones,
+    right_foot_bones
 ]
 
 
@@ -421,27 +435,27 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             # Define the bones assigned to collections as lists
             # FK 
             FK_Leg_L = [
-                "MDL-lfoot",
+                left_foot_bones[0],
                 left_shin_bones[0],
                 left_thigh_bones[0]
             ]
 
             FK_Leg_R = [
-                "MDL-rfoot",
+                right_foot_bones[0],
                 right_shin_bones[0],
                 right_thigh_bones[0]
             ]
 
             FK_Arm_L = [
-                "MDL-J-L-PalmBone1",
-                "MDL-jnt-L-wrist_rotX",
+                left_hand_bones[0],
+                left_wrist_bones[0],
                 left_forearm_bones[0],
                 left_upper_arm_bones[0]
             ]
 
             FK_Arm_R = [
-                "MDL-J_R-HandBone",
-                "MDL-jnt-R-wrist_rotX",
+                right_hand_bones[0],
+                right_wrist_bones[0],
                 right_forearm_bones[0],
                 right_upper_arm_bones[0]
             ]
