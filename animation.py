@@ -11,34 +11,34 @@ import os
 # Lists of possible bones for each bone type
 right_upper_arm_bones = ["MDL-jnt-R-bicepBONE"]
 right_forearm_bones = ["MDL-jnt49_2-RFarm"]
-right_effector_bones = ["MDL-eff50"]
+right_arm_effector_bones = ["MDL-eff50"]
 
 left_upper_arm_bones = ["MDL-jnt-L-bicepBONE"]
 left_forearm_bones = ["MDL-jnt-L-FOREARM"]
-left_effector_bones = ["MDL-eff45"]
+left_arm_effector_bones = ["MDL-eff45"]
 
 
 right_thigh_bones = ["MDL-jnt-R-thighbone"]
 right_shin_bones = ["MDL-jnt-R-leg-shin"]
-right_effector_bones = ["MDL-eff23"]
+right_leg_effector_bones = ["MDL-eff23"]
 
 left_thigh_bones = ["MDL-jnt-L-thighbone"]
 left_shin_bones = ["MDL-jnt-L-LEG-shin"]
-left_effector_bones = ["MDL-eff9"]
+left_leg_effector_bones = ["MDL-eff9"]
 
 boneArrays = [
     right_upper_arm_bones,
     right_forearm_bones,
-    right_effector_bones,
+    right_arm_effector_bones,
     left_upper_arm_bones,
     left_forearm_bones,
-    left_effector_bones,
+    left_arm_effector_bones,
     right_thigh_bones,
     right_shin_bones,
-    right_effector_bones,
+    right_leg_effector_bones,
     left_thigh_bones,
     left_shin_bones,
-    left_effector_bones
+    left_leg_effector_bones
 ]
 
 
