@@ -190,16 +190,16 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
 
             # # Setup IK for the left leg
 
-            setup_ik('Leg', 'MDL-jnt-L-thighbone', 'MDL-jnt-L-LEG-shin', 'L')
+            setup_ik('Leg', left_thigh_bones[0], left_shin_bones[0], 'L')
 
             # # Setup IK for the right leg
-            setup_ik('Leg', 'MDL-jnt-R-thighbone', 'MDL-jnt-R-leg-shin', 'R')
+            setup_ik('Leg', right_thigh_bones[0], right_shin_bones[0], 'R')
 
             # # Setup IK for the left arm
-            setup_ik('Arm', 'MDL-jnt-L-bicepBONE', 'MDL-jnt-L-FOREARM', 'L')
+            setup_ik('Arm', left_upper_arm_bones[0], left_forearm_bones[0], 'L')
 
             # # Setup IK for the right arm
-            setup_ik('Arm', right_upper_arm_bones[0], 'MDL-jnt49_2-RFarm', 'R')
+            setup_ik('Arm', right_upper_arm_bones[0], right_forearm_bones[0], 'R')
 
 
             # Switch back to Object Mode
@@ -274,16 +274,16 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                     self.report({'WARNING'}, f"Foot effector bone {terminal_eff_name} not found.")
 
             # Add constraints for the left leg
-            add_constraints('Leg', 'MDL-jnt-L-thighbone', 'MDL-jnt-L-LEG-shin', 'MDL-eff9', 'L')
+            add_constraints('Leg', left_thigh_bones[0], left_shin_bones[0], left_leg_effector_bones[0], 'L')
 
             # Add constraints for the right leg
-            add_constraints('Leg', 'MDL-jnt-R-thighbone', 'MDL-jnt-R-leg-shin', 'MDL-eff23', 'R')
+            add_constraints('Leg', right_thigh_bones[0], right_shin_bones[0], right_leg_effector_bones[0], 'R')
 
             # Add constraints for the left arm
-            add_constraints('Arm', 'MDL-jnt-L-bicepBONE', 'MDL-jnt-L-FOREARM', 'MDL-eff45', 'L')
+            add_constraints('Arm', left_upper_arm_bones[0], left_forearm_bones[0], left_arm_effector_bones[0], 'L')
 
             # # Add constraints for the right arm
-            add_constraints('Arm', right_upper_arm_bones[0], 'MDL-jnt49_2-RFarm', 'MDL-eff50', 'R')
+            add_constraints('Arm', right_upper_arm_bones[0], right_forearm_bones[0], right_arm_effector_bones[0], 'R')
 
             #####################################################
             # BONE SHAPE IMPORT
@@ -330,27 +330,27 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             # FK 
             FK_Leg_L = [
                 "MDL-lfoot",
-                "MDL-jnt-L-LEG-shin",
-                "MDL-jnt-L-thighbone"
+                left_shin_bones[0],
+                left_thigh_bones[0]
             ]
 
             FK_Leg_R = [
                 "MDL-rfoot",
-                "MDL-jnt-R-leg-shin",
-                "MDL-jnt-R-thighbone"
+                right_shin_bones[0],
+                right_thigh_bones[0]
             ]
 
             FK_Arm_L = [
                 "MDL-J-L-PalmBone1",
                 "MDL-jnt-L-wrist_rotX",
-                "MDL-jnt-L-FOREARM",
-                "MDL-jnt-L-bicepBONE"
+                left_forearm_bones[0],
+                left_upper_arm_bones[0]
             ]
 
             FK_Arm_R = [
                 "MDL-J_R-HandBone",
                 "MDL-jnt-R-wrist_rotX",
-                "MDL-jnt49_2-RFarm",
+                right_forearm_bones[0],
                 right_upper_arm_bones[0]
             ]
             
@@ -379,23 +379,23 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
 
 
             PROXY_Leg_L = [
-                "MDL-jnt-L-LEG-shin_proxy",
-                "MDL-jnt-L-thighbone_proxy"
+                left_shin_bones[0] + '_proxy',
+                left_thigh_bones[0] + '_proxy'
             ]
 
             PROXY_Leg_R = [
-                "MDL-jnt-R-leg-shin_proxy",
-                "MDL-jnt-R-thighbone_proxy"
+                right_shin_bones[0] + '_proxy',
+                right_thigh_bones[0] + '_proxy'
             ]
 
             PROXY_Arm_L = [
-                "MDL-jnt-L-bicepBONE_proxy",
-                "MDL-jnt-L-FOREARM_proxy"
+                left_upper_arm_bones[0] + '_proxy',
+                left_forearm_bones[0] + '_proxy'
             ]
 
             PROXY_Arm_R = [
                 right_upper_arm_bones[0] + "_proxy",
-                "MDL-jnt49_2-RFarm_proxy"
+                right_forearm_bones[0] + '_proxy'
             ]
 
             # effBones collections 
@@ -408,8 +408,8 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
 
             # Pair the parent bone with the correct variable (as references)
             ParentList = [
-                "MDL-jnt-L-LEG-shin",
-                "MDL-jnt-R-leg-shin",
+                left_shin_bones[0],
+                right_shin_bones[0],
                 "MDL-jnt-L-wrist_rotX",
                 "MDL-jnt-R-wrist_rotX"
             ]
@@ -657,7 +657,7 @@ class OBJECT_OT_DeleteRigSetup(bpy.types.Operator):
             bpy.ops.object.mode_set(mode='EDIT')
 
             # Delete the constraints from the proximals and distals
-            for bone_name in ["MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin", "MDL-jnt-L-thighbone", "MDL-jnt-R-thighbone",'MDL-jnt-L-bicepBONE','MDL-jnt-L-FOREARM',right_upper_arm_bones[0],'MDL-jnt49_2-RFarm']:
+            for bone_name in [left_shin_bones[0], right_shin_bones[0], left_thigh_bones[0], right_thigh_bones[0],left_upper_arm_bones[0],left_forearm_bones[0],right_upper_arm_bones[0],right_forearm_bones[0]]:
                 bone = obj.data.edit_bones.get(bone_name)
                 if bone:
                     pbone = obj.pose.bones.get(bone_name)
@@ -667,7 +667,7 @@ class OBJECT_OT_DeleteRigSetup(bpy.types.Operator):
 
 
             # Delete the c constraint from the effectors from their parents
-            for bone_name in ["MDL-jnt-L-LEG-shin", "MDL-jnt-R-leg-shin","MDL-jnt-R-wrist_rotX","MDL-jnt-L-wrist_rotX"]:
+            for bone_name in [left_shin_bones[0], right_shin_bones[0],"MDL-jnt-R-wrist_rotX","MDL-jnt-L-wrist_rotX"]:
                 bone = obj.data.edit_bones.get(bone_name)
                 if bone:
                     pbone = obj.pose.bones.get(bone_name)
@@ -689,7 +689,7 @@ class OBJECT_OT_DeleteRigSetup(bpy.types.Operator):
                     obj.data.edit_bones.remove(bone)
 
             # Delete proxy bones
-            for bone_name in ["MDL-jnt-L-LEG-shin_proxy", "MDL-jnt-R-leg-shin_proxy", "MDL-jnt-L-thighbone_proxy", "MDL-jnt-R-thighbone_proxy",'MDL-jnt-L-bicepBONE_proxy','MDL-jnt-L-FOREARM_proxy',right_upper_arm_bones[0] + "_proxy",'MDL-jnt49_2-RFarm_proxy']:
+            for bone_name in [left_shin_bones[0] + '_proxy', right_shin_bones[0] + '_proxy', left_thigh_bones[0] + '_proxy', right_thigh_bones[0] + '_proxy',left_upper_arm_bones[0] + '_proxy',left_forearm_bones[0] + '_proxy',right_upper_arm_bones[0] + "_proxy",right_forearm_bones[0] + '_proxy']:
                 bone = obj.data.edit_bones.get(bone_name)
                 if bone:
                     obj.data.edit_bones.remove(bone)
