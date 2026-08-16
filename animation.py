@@ -9,11 +9,11 @@ import os
 # Made by Pat on 02/10/2024
 
 # Lists of possible bones for each bone type
-right_upper_arm_bones = ["MDL-jnt-R-bicepBONE"]
-right_forearm_bones = ["MDL-jnt49_2-RFarm"]
+right_upper_arm_bones = ["MDL-jnt-R-bicepBONE","MDL-RArmjnt"]
+right_forearm_bones = ["MDL-jnt49_2-RFarm","MDL-jntR4arm"]
 
-left_upper_arm_bones = ["MDL-jnt-L-bicepBONE"]
-left_forearm_bones = ["MDL-jnt-L-FOREARM"]
+left_upper_arm_bones = ["MDL-jnt-L-bicepBONE","MDL-Larmjnt"]
+left_forearm_bones = ["MDL-jnt-L-FOREARM","MDL-L4armjnt"]
 
 
 right_thigh_bones = ["MDL-jnt-R-thighbone"]
