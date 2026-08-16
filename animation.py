@@ -11,35 +11,47 @@ import os
 # Lists of possible bones for each bone type
 right_upper_arm_bones = ["MDL-jnt-R-bicepBONE"]
 right_forearm_bones = ["MDL-jnt49_2-RFarm"]
-right_arm_effector_bones = ["MDL-eff50"]
 
 left_upper_arm_bones = ["MDL-jnt-L-bicepBONE"]
 left_forearm_bones = ["MDL-jnt-L-FOREARM"]
-left_arm_effector_bones = ["MDL-eff45"]
 
 
 right_thigh_bones = ["MDL-jnt-R-thighbone"]
 right_shin_bones = ["MDL-jnt-R-leg-shin"]
-right_leg_effector_bones = ["MDL-eff23"]
 
 left_thigh_bones = ["MDL-jnt-L-thighbone"]
 left_shin_bones = ["MDL-jnt-L-LEG-shin"]
-left_leg_effector_bones = ["MDL-eff9"]
 
 boneArrays = [
     right_upper_arm_bones,
     right_forearm_bones,
-    right_arm_effector_bones,
     left_upper_arm_bones,
     left_forearm_bones,
-    left_arm_effector_bones,
     right_thigh_bones,
     right_shin_bones,
-    right_leg_effector_bones,
     left_thigh_bones,
-    left_shin_bones,
-    left_leg_effector_bones
+    left_shin_bones
 ]
+
+
+# Automatically find the effector bone from a parent bone.
+# depth = 1 for legs
+# depth = 4 for arms
+def find_effector_bone(armature, parent_bone_name, depth):
+    bone = armature.data.bones.get(parent_bone_name)
+
+    if not bone:
+        print(f"Effector finder: parent bone '{parent_bone_name}' not found.")
+        return None
+
+    for _ in range(depth):
+        if not bone.children:
+            print(f"Effector finder: no child found while searching from '{parent_bone_name}'.")
+            return None
+
+        bone = bone.children[0]
+
+    return bone.name
 
 
 class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
@@ -71,6 +83,36 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                 else:
                     self.report({'WARNING'}, f"No valid bone found for {array[0]} in the armature.")
 
+
+            #####################################################
+            # AUTOMATIC EFFECTOR FINDING
+            #####################################################
+
+            left_leg_effector = find_effector_bone(
+                armature,
+                left_shin_bones[0],
+                1
+            )
+
+            right_leg_effector = find_effector_bone(
+                armature,
+                right_shin_bones[0],
+                1
+            )
+
+            left_arm_effector = find_effector_bone(
+                armature,
+                left_forearm_bones[0],
+                4
+            )
+
+            right_arm_effector = find_effector_bone(
+                armature,
+                right_forearm_bones[0],
+                4
+            )
+
+
             ###########
             # IK SETUP
             ##########
@@ -79,7 +121,7 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             bpy.ops.object.mode_set(mode='EDIT')
 
             # Function to set up IK for a given limb (left or right)
-            def setup_ik(limb, proximal_name, distal_name, side_prefix):
+            def setup_ik(limb, proximal_name, distal_name, effector_name, side_prefix):
                 # Check if IK bones already exist
                 if limb == 'Leg':
                     ik_bone_name = f'{side_prefix}-Foot-Ik'
@@ -97,6 +139,10 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                     self.report({'WARNING'}, f"{limb} bones {proximal_name} or {distal_name} not found.")
                     return  # Skip the setup if bones are not found
 
+                # Check if the effector was found
+                if not effector_name:
+                    self.report({'WARNING'}, f"Could not find effector for {side_prefix} {limb}.")
+                    return
 
 
                 # Create proxy bones for the proximal and distal bones
@@ -146,27 +192,25 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                         proxy_proximal.parent = parent_bone
                         proxy_proximal.use_connect = False
 
-                # Automatically find the first child of the distal bone to use as the effector
-                if original_distal and original_distal.children:
+                # Use automatically found effector
+                eff_bone = obj.data.edit_bones.get(effector_name)
 
-                    # Create the IK bone
-                    if limb == 'Leg':
-                        eff_bone = original_distal.children[0]  # First child of shinbone
-                        ik_bone = obj.data.edit_bones.new(f'{side_prefix}-Foot-Ik')
+                # Create the IK bone
+                if limb == 'Leg':
+                    ik_bone = obj.data.edit_bones.new(f'{side_prefix}-Foot-Ik')
 
-                    elif limb == 'Arm':
-                        eff_bone = original_distal.children[0].children[0].children[0].children[0]  # 4th child of forearm
-                        ik_bone = obj.data.edit_bones.new(f'{side_prefix}-Hand-Ik')
-                   
-                    ik_bone.head = eff_bone.head
-                    ik_bone.tail = eff_bone.tail
-                    ik_bone.roll = eff_bone.roll
-                    ik_bone.use_deform = False
-                    parent_bone = obj.data.edit_bones.get('MDL-GOD')
+                elif limb == 'Arm':
+                    ik_bone = obj.data.edit_bones.new(f'{side_prefix}-Hand-Ik')
 
-                    if parent_bone:
-                        ik_bone.parent = parent_bone
-                        ik_bone.use_connect = False
+                ik_bone.head = eff_bone.head
+                ik_bone.tail = eff_bone.tail
+                ik_bone.roll = eff_bone.roll
+                ik_bone.use_deform = False
+                parent_bone = obj.data.edit_bones.get('MDL-GOD')
+
+                if parent_bone:
+                    ik_bone.parent = parent_bone
+                    ik_bone.use_connect = False
 
                 # Create the pole vector
                 if proxy_proximal and proxy_distal:
@@ -188,18 +232,42 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                     if parent_bone:
                         pole_bone.parent = parent_bone
 
-            # # Setup IK for the left leg
 
-            setup_ik('Leg', left_thigh_bones[0], left_shin_bones[0], 'L')
+            # # Setup IK for the left leg
+            setup_ik(
+                'Leg',
+                left_thigh_bones[0],
+                left_shin_bones[0],
+                left_leg_effector,
+                'L'
+            )
 
             # # Setup IK for the right leg
-            setup_ik('Leg', right_thigh_bones[0], right_shin_bones[0], 'R')
+            setup_ik(
+                'Leg',
+                right_thigh_bones[0],
+                right_shin_bones[0],
+                right_leg_effector,
+                'R'
+            )
 
             # # Setup IK for the left arm
-            setup_ik('Arm', left_upper_arm_bones[0], left_forearm_bones[0], 'L')
+            setup_ik(
+                'Arm',
+                left_upper_arm_bones[0],
+                left_forearm_bones[0],
+                left_arm_effector,
+                'L'
+            )
 
             # # Setup IK for the right arm
-            setup_ik('Arm', right_upper_arm_bones[0], right_forearm_bones[0], 'R')
+            setup_ik(
+                'Arm',
+                right_upper_arm_bones[0],
+                right_forearm_bones[0],
+                right_arm_effector,
+                'R'
+            )
 
 
             # Switch back to Object Mode
@@ -274,16 +342,40 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
                     self.report({'WARNING'}, f"Foot effector bone {terminal_eff_name} not found.")
 
             # Add constraints for the left leg
-            add_constraints('Leg', left_thigh_bones[0], left_shin_bones[0], left_leg_effector_bones[0], 'L')
+            add_constraints(
+                'Leg',
+                left_thigh_bones[0],
+                left_shin_bones[0],
+                left_leg_effector,
+                'L'
+            )
 
             # Add constraints for the right leg
-            add_constraints('Leg', right_thigh_bones[0], right_shin_bones[0], right_leg_effector_bones[0], 'R')
+            add_constraints(
+                'Leg',
+                right_thigh_bones[0],
+                right_shin_bones[0],
+                right_leg_effector,
+                'R'
+            )
 
             # Add constraints for the left arm
-            add_constraints('Arm', left_upper_arm_bones[0], left_forearm_bones[0], left_arm_effector_bones[0], 'L')
+            add_constraints(
+                'Arm',
+                left_upper_arm_bones[0],
+                left_forearm_bones[0],
+                left_arm_effector,
+                'L'
+            )
 
             # # Add constraints for the right arm
-            add_constraints('Arm', right_upper_arm_bones[0], right_forearm_bones[0], right_arm_effector_bones[0], 'R')
+            add_constraints(
+                'Arm',
+                right_upper_arm_bones[0],
+                right_forearm_bones[0],
+                right_arm_effector,
+                'R'
+            )
 
             #####################################################
             # BONE SHAPE IMPORT
@@ -376,8 +468,6 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             ]
             
             # Proxy
-
-
             PROXY_Leg_L = [
                 left_shin_bones[0] + '_proxy',
                 left_thigh_bones[0] + '_proxy'
@@ -406,32 +496,22 @@ class OBJECT_OT_GhostMasterIK(bpy.types.Operator):
             effBone_Arm_L = []
             effBone_Arm_R = []
 
-            # Pair the parent bone with the correct variable (as references)
-            ParentList = [
-                left_shin_bones[0],
-                right_shin_bones[0],
-                "MDL-jnt-L-wrist_rotX",
-                "MDL-jnt-R-wrist_rotX"
-            ]
+            # Use the automatically discovered effectors
+            if left_leg_effector:
+                effBone_Leg_L.append(left_leg_effector)
+                print(f"Added {left_leg_effector} to collection")
 
-            CollectionList = [
-                effBone_Leg_L,
-                effBone_Leg_R,
-                effBone_Arm_L,
-                effBone_Arm_R
-            ]
+            if right_leg_effector:
+                effBone_Leg_R.append(right_leg_effector)
+                print(f"Added {right_leg_effector} to collection")
 
-            # Add children to correct list
-            for parent_bone, collection in zip(ParentList, CollectionList):
-                if parent_bone in armature.data.bones:
-                    bone = armature.pose.bones[parent_bone]
-                    if bone.children:
-                        child = bone.children[0]
-                        collection.append(child.name)
-                        print(f"Added {child.name} to collection")
-                    else:
-                        print(f"No child found for {parent_bone}")
+            if left_arm_effector:
+                effBone_Arm_L.append(left_arm_effector)
+                print(f"Added {left_arm_effector} to collection")
 
+            if right_arm_effector:
+                effBone_Arm_R.append(right_arm_effector)
+                print(f"Added {right_arm_effector} to collection")
 
 
             # Check if bone collections are already created, if not, create them
@@ -647,17 +727,51 @@ class OBJECT_OT_DeleteRigSetup(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.context.object
 
-		# Ensure that the active object is an armature
+        # Ensure that the active object is an armature
         if obj and obj.type == 'ARMATURE':
 
             # Store the armature reference
             armature = obj
 
+            # Find the effectors automatically
+            left_leg_effector = find_effector_bone(
+                armature,
+                left_shin_bones[0],
+                1
+            )
+
+            right_leg_effector = find_effector_bone(
+                armature,
+                right_shin_bones[0],
+                1
+            )
+
+            left_arm_effector = find_effector_bone(
+                armature,
+                left_forearm_bones[0],
+                4
+            )
+
+            right_arm_effector = find_effector_bone(
+                armature,
+                right_forearm_bones[0],
+                4
+            )
+
             # Switch to Edit Mode to modify bones
             bpy.ops.object.mode_set(mode='EDIT')
 
             # Delete the constraints from the proximals and distals
-            for bone_name in [left_shin_bones[0], right_shin_bones[0], left_thigh_bones[0], right_thigh_bones[0],left_upper_arm_bones[0],left_forearm_bones[0],right_upper_arm_bones[0],right_forearm_bones[0]]:
+            for bone_name in [
+                left_shin_bones[0],
+                right_shin_bones[0],
+                left_thigh_bones[0],
+                right_thigh_bones[0],
+                left_upper_arm_bones[0],
+                left_forearm_bones[0],
+                right_upper_arm_bones[0],
+                right_forearm_bones[0]
+            ]:
                 bone = obj.data.edit_bones.get(bone_name)
                 if bone:
                     pbone = obj.pose.bones.get(bone_name)
@@ -666,30 +780,47 @@ class OBJECT_OT_DeleteRigSetup(bpy.types.Operator):
                             pbone.constraints.remove(constraint)
 
 
-            # Delete the c constraint from the effectors from their parents
-            for bone_name in [left_shin_bones[0], right_shin_bones[0],"MDL-jnt-R-wrist_rotX","MDL-jnt-L-wrist_rotX"]:
-                bone = obj.data.edit_bones.get(bone_name)
-                if bone:
-                    pbone = obj.pose.bones.get(bone_name)
+            # Delete the Copy Rotation constraints from the automatically found effectors
+            for effector_name in [
+                left_leg_effector,
+                right_leg_effector,
+                left_arm_effector,
+                right_arm_effector
+            ]:
+                if effector_name:
+                    pbone = obj.pose.bones.get(effector_name)
                     if pbone:
-                        # Check if the shin bone has children
-                        if bone.children:
-                            eff_bone = pbone.id_data.pose.bones.get(bone.children[0].name)  # Get the pose bone of the first child
-                            if eff_bone:
-                                # Iterate through the constraints of the first child and remove any Child Of constraint
-                                for constraint in eff_bone.constraints:
-                                    if constraint.type == 'COPY_ROTATION':
-                                        eff_bone.constraints.remove(constraint)
-            
-                                
+                        for constraint in list(pbone.constraints):
+                            if constraint.type == 'COPY_ROTATION':
+                                pbone.constraints.remove(constraint)
+
+
             # Delete the IK bones and pole targets
-            for bone_name in ["L-Foot-Ik", "R-Foot-Ik", "L-Knee-Pole", "R-Knee-Pole","L-Hand-Ik", "R-Hand-Ik","L-Elbow-Pole","R-Elbow-Pole"]:
+            for bone_name in [
+                "L-Foot-Ik",
+                "R-Foot-Ik",
+                "L-Knee-Pole",
+                "R-Knee-Pole",
+                "L-Hand-Ik",
+                "R-Hand-Ik",
+                "L-Elbow-Pole",
+                "R-Elbow-Pole"
+            ]:
                 bone = obj.data.edit_bones.get(bone_name)
                 if bone:
                     obj.data.edit_bones.remove(bone)
 
             # Delete proxy bones
-            for bone_name in [left_shin_bones[0] + '_proxy', right_shin_bones[0] + '_proxy', left_thigh_bones[0] + '_proxy', right_thigh_bones[0] + '_proxy',left_upper_arm_bones[0] + '_proxy',left_forearm_bones[0] + '_proxy',right_upper_arm_bones[0] + "_proxy",right_forearm_bones[0] + '_proxy']:
+            for bone_name in [
+                left_shin_bones[0] + '_proxy',
+                right_shin_bones[0] + '_proxy',
+                left_thigh_bones[0] + '_proxy',
+                right_thigh_bones[0] + '_proxy',
+                left_upper_arm_bones[0] + '_proxy',
+                left_forearm_bones[0] + '_proxy',
+                right_upper_arm_bones[0] + "_proxy",
+                right_forearm_bones[0] + '_proxy'
+            ]:
                 bone = obj.data.edit_bones.get(bone_name)
                 if bone:
                     obj.data.edit_bones.remove(bone)
